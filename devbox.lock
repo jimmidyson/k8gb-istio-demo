@@ -81,46 +81,6 @@
         }
       }
     },
-    "eksctl@latest": {
-      "last_modified": "2023-10-11T07:26:37Z",
-      "resolved": "github:NixOS/nixpkgs/01441e14af5e29c9d27ace398e6dd0b293e25a54#eksctl",
-      "source": "devbox-search",
-      "version": "0.161.0",
-      "systems": {
-        "aarch64-darwin": {
-          "store_path": "/nix/store/2ymybsgs8d7anmi487wil9rg99qjpk7c-eksctl-0.161.0"
-        },
-        "aarch64-linux": {
-          "store_path": "/nix/store/4fgr2rlb58kf2qcqf2cih8l14x0fv5jw-eksctl-0.161.0"
-        },
-        "x86_64-darwin": {
-          "store_path": "/nix/store/imcbxfdm92z4s2p8r6931pmcz71kwfyn-eksctl-0.161.0"
-        },
-        "x86_64-linux": {
-          "store_path": "/nix/store/pzd2j6cfzh5yscsplypdb3zlb3bprx0b-eksctl-0.161.0"
-        }
-      }
-    },
-    "go@latest": {
-      "last_modified": "2023-09-27T18:02:17Z",
-      "resolved": "github:NixOS/nixpkgs/517501bcf14ae6ec47efd6a17dda0ca8e6d866f9#go_1_21",
-      "source": "devbox-search",
-      "version": "1.21.1",
-      "systems": {
-        "aarch64-darwin": {
-          "store_path": "/nix/store/s1xk6hrfn0kw8ycvqbx4vv4gr00k6qpl-go-1.21.1"
-        },
-        "aarch64-linux": {
-          "store_path": "/nix/store/id3ygqxp1hvbh7dyjlwngx53fvcpqg84-go-1.21.1"
-        },
-        "x86_64-darwin": {
-          "store_path": "/nix/store/yn0g820ayb963s0i4nnw9pf72l49kkg0-go-1.21.1"
-        },
-        "x86_64-linux": {
-          "store_path": "/nix/store/pvvv2lmx9m8b2n0447mljrl5xmla8r3h-go-1.21.1"
-        }
-      }
-    },
     "kubectl@latest": {
       "last_modified": "2023-10-02T08:16:30Z",
       "resolved": "github:NixOS/nixpkgs/f902cb49892d300ff15cb237e48aa1cad79d68c3#kubectl",
