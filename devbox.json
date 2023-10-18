@@ -1,0 +1,13 @@
+{
+  "packages": [
+    "aws-iam-authenticator@latest",
+    "awscli2@latest",
+    "bash@latest",
+    "dig@latest",
+    "eksctl@latest",
+    "go@latest",
+    "kubectl@latest",
+    "kubernetes-helm@latest",
+    "opentofu@latest"
+  ]
+}
