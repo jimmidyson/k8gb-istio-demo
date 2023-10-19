@@ -23,7 +23,7 @@ readonly PODINFO_HOSTNAME_EU="${GATEWAY_HOSTNAME/#\*/podinfo.eu}"
 readonly PODINFO_HOSTNAME_US="${GATEWAY_HOSTNAME/#\*/podinfo.us}"
 readonly PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME/#\*/podinfo.global}"
 
-cat <<EOF | kubectl apply --kubeconfig eks-eu.kubeconfig --server-side -f -
+kubectl apply --kubeconfig eks-eu.kubeconfig --server-side -f - <<EOF
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:

@@ -23,7 +23,7 @@ readonly PODINFO_HOSTNAME_EU="${GATEWAY_HOSTNAME/#\*/podinfo.eu}"
 readonly PODINFO_HOSTNAME_US="${GATEWAY_HOSTNAME/#\*/podinfo.us}"
 readonly PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME/#\*/podinfo.global}"
 
-cat <<EOF | kubectl apply --kubeconfig eks-eu.kubeconfig --server-side -f -
+kubectl apply --kubeconfig eks-eu.kubeconfig --server-side -f - <<EOF
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:
@@ -45,7 +45,7 @@ helm upgrade --kubeconfig eks-us.kubeconfig --install podinfo oci://ghcr.io/stef
   --set-string ui.logo=https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_the_United_States_%28DoS_ECA_Color_Standard%29.svg \
   --set-string ui.message="I'm in the USA!"
 
-cat <<EOF | kubectl apply --kubeconfig eks-us.kubeconfig --server-side -f -
+kubectl apply --kubeconfig eks-us.kubeconfig --server-side -f - <<EOF
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
 metadata:

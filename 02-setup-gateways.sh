@@ -16,7 +16,7 @@ fi
 kubectl --kubeconfig eks-eu.kubeconfig apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0-rc1/standard-install.yaml
 helm upgrade --kubeconfig eks-eu.kubeconfig --install envoy-gateway oci://docker.io/envoyproxy/gateway-helm --version v0.5.0 -n envoy-gateway-system --create-namespace --wait --wait-for-jobs
 
-cat <<EOF | kubectl --kubeconfig eks-eu.kubeconfig apply --server-side -f -
+kubectl --kubeconfig eks-eu.kubeconfig apply --server-side -f - <<EOF
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: GatewayClass
 metadata:
@@ -40,7 +40,7 @@ EOF
 kubectl --kubeconfig eks-us.kubeconfig apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0-rc1/standard-install.yaml
 helm upgrade --kubeconfig eks-us.kubeconfig --install envoy-gateway oci://docker.io/envoyproxy/gateway-helm --version v0.5.0 -n envoy-gateway-system --create-namespace --wait --wait-for-jobs
 
-cat <<EOF | kubectl --kubeconfig eks-us.kubeconfig apply --server-side -f -
+kubectl --kubeconfig eks-us.kubeconfig apply --server-side -f - <<EOF
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: GatewayClass
 metadata:

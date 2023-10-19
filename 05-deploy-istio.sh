@@ -101,8 +101,7 @@ EOF
     kubectl --kubeconfig "${cluster}.kubeconfig" apply --server-side -n istio-system -f -
 done
 
-istioctl install --kubeconfig eks-eu.kubeconfig -y -f <(
-  cat <<EOF
+istioctl install --kubeconfig eks-eu.kubeconfig -y -f - <<EOF
 apiVersion: install.istio.io/v1alpha1
 kind: IstioOperator
 spec:
@@ -121,10 +120,8 @@ spec:
         clusterName: eks-eu
       network: network-eu
 EOF
-)
 
-istioctl install --kubeconfig eks-eu.kubeconfig -y -f <(
-  cat <<EOF
+istioctl install --kubeconfig eks-eu.kubeconfig -y -f - <<EOF
 apiVersion: install.istio.io/v1alpha1
 kind: IstioOperator
 metadata:
@@ -165,9 +162,8 @@ spec:
     global:
       network: network-eu
 EOF
-)
 
-cat <<EOF | kubectl --kubeconfig eks-eu.kubeconfig apply --server-side --namespace istio-system -f -
+kubectl --kubeconfig eks-eu.kubeconfig apply --server-side --namespace istio-system -f - <<EOF
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
@@ -186,8 +182,7 @@ spec:
         - "*.local"
 EOF
 
-istioctl install --kubeconfig eks-us.kubeconfig -y -f <(
-  cat <<EOF
+istioctl install --kubeconfig eks-us.kubeconfig -y -f - <<EOF
 apiVersion: install.istio.io/v1alpha1
 kind: IstioOperator
 spec:
@@ -206,10 +201,8 @@ spec:
         clusterName: eks-us
       network: network-us
 EOF
-)
 
-istioctl install --kubeconfig eks-us.kubeconfig -y -f <(
-  cat <<EOF
+istioctl install --kubeconfig eks-us.kubeconfig -y -f - <<EOF
 apiVersion: install.istio.io/v1alpha1
 kind: IstioOperator
 metadata:
@@ -250,9 +243,8 @@ spec:
     global:
       network: network-us
 EOF
-)
 
-cat <<EOF | kubectl --kubeconfig eks-us.kubeconfig apply --server-side --namespace istio-system -f -
+kubectl --kubeconfig eks-us.kubeconfig apply --server-side --namespace istio-system -f - <<EOF
 apiVersion: networking.istio.io/v1alpha3
 kind: Gateway
 metadata:
