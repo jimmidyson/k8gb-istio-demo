@@ -81,6 +81,26 @@
         }
       }
     },
+    "istioctl@latest": {
+      "last_modified": "2023-09-27T18:02:17Z",
+      "resolved": "github:NixOS/nixpkgs/517501bcf14ae6ec47efd6a17dda0ca8e6d866f9#istioctl",
+      "source": "devbox-search",
+      "version": "1.18.2",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/0ivc1w9w70g0z6l1f3plfba06n000ggk-istioctl-1.18.2"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/37g3xmssfyq0vdj54paim1mnl37z33gn-istioctl-1.18.2"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/qc8z8y5i9f194g5xk4cdpznwca71ixwz-istioctl-1.18.2"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/4335sa93kvyaah5f7b6l6m2dhm7flawv-istioctl-1.18.2"
+        }
+      }
+    },
     "kubectl@latest": {
       "last_modified": "2023-10-02T08:16:30Z",
       "resolved": "github:NixOS/nixpkgs/f902cb49892d300ff15cb237e48aa1cad79d68c3#kubectl",
