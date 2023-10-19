@@ -6,6 +6,8 @@ IFS=$'\n\t'
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 readonly SCRIPT_DIR
 
+pushd "${SCRIPT_DIR}" &>/dev/null
+
 if ! aws sts get-caller-identity &>/dev/null; then
   echo 'You must be logged in to AWS to run this script.'
   exit 1
@@ -44,11 +46,11 @@ if kubectl --kubeconfig eks-eu.kubeconfig get gateways nginx-gateway &>/dev/null
       "Action": "DELETE",
       "ResourceRecordSet": {
         "Name": "${PODINFO_HOSTNAME_EU}",
-        "Type": "A",
+        "Type": "CNAME",
         "TTL": 15,
         "ResourceRecords": [
           {
-            "Value": "${PUBLIC_IP_NGINX_EU}"
+            "Value": "${PUBLIC_HOSTNAME_NGINX_EU}"
           }
         ]
       }
@@ -57,11 +59,11 @@ if kubectl --kubeconfig eks-eu.kubeconfig get gateways nginx-gateway &>/dev/null
       "Action": "DELETE",
       "ResourceRecordSet": {
         "Name": "${PODINFO_HOSTNAME_US}",
-        "Type": "A",
+        "Type": "CNAME",
         "TTL": 15,
         "ResourceRecords": [
           {
-            "Value": "${PUBLIC_IP_NGINX_US}"
+            "Value": "${PUBLIC_HOSTNAME_NGINX_US}"
           }
         ]
       }
@@ -95,3 +97,5 @@ tofu -chdir="${SCRIPT_DIR}/tofu" destroy -auto-approve -input=false
 
 # Duplicate --force flags are required to remove nested git repositories downloaded for tofu modules.
 git clean -dx --force --force --exclude=.devbox
+
+popd &>/dev/null

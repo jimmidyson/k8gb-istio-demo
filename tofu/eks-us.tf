@@ -116,7 +116,7 @@ resource "aws_iam_policy" "external-dns-route53-us" {
                 "route53:ChangeResourceRecordSets"
             ],
             "Resource": [
-                "arn:aws:route53:::hostedzone/${data.aws_route53_zone.ksphere_platform.zone_id}"
+                "arn:aws:route53:::hostedzone/${data.aws_route53_zone.demo_zone.zone_id}"
             ]
         },
         {

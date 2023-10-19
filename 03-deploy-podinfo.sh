@@ -67,29 +67,20 @@ spec:
       port: 9898
 EOF
 
-until [ -n "${PUBLIC_HOSTNAME_NGINX_EU:-}" ]; do
-  sleep 0.5
-  PUBLIC_HOSTNAME_NGINX_EU="$(kubectl --kubeconfig eks-eu.kubeconfig get services -n nginx-gateway nginx-gateway-nginx-gateway-fabric -ojsonpath='{.status.loadBalancer.ingress[0].hostname}')"
-done
+kubectl --kubeconfig eks-eu.kubeconfig wait --for=jsonpath='{.status.loadBalancer.ingress}' --namespace nginx-gateway services/nginx-gateway-nginx-gateway-fabric
+kubectl --kubeconfig eks-us.kubeconfig wait --for=jsonpath='{.status.loadBalancer.ingress}' --namespace nginx-gateway services/nginx-gateway-nginx-gateway-fabric
+
+PUBLIC_HOSTNAME_NGINX_EU="$(kubectl --kubeconfig eks-eu.kubeconfig get services --namespace nginx-gateway nginx-gateway-nginx-gateway-fabric -ojsonpath='{.status.loadBalancer.ingress[0].hostname}')"
 readonly PUBLIC_HOSTNAME_NGINX_EU
-until [ -n "${PUBLIC_IP_NGINX_EU:-}" ]; do
-  sleep 0.5
-  PUBLIC_IP_NGINX_EU="$(dig +short "${PUBLIC_HOSTNAME_NGINX_EU}")"
-done
+PUBLIC_IP_NGINX_EU="$(dig +short "${PUBLIC_HOSTNAME_NGINX_EU}")"
 readonly PUBLIC_IP_NGINX_EU
 
-until [ -n "${PUBLIC_HOSTNAME_NGINX_US:-}" ]; do
-  sleep 0.5
-  PUBLIC_HOSTNAME_NGINX_US="$(kubectl --kubeconfig eks-us.kubeconfig get services -n nginx-gateway nginx-gateway-nginx-gateway-fabric -ojsonpath='{.status.loadBalancer.ingress[0].hostname}')"
-done
+PUBLIC_HOSTNAME_NGINX_US="$(kubectl --kubeconfig eks-us.kubeconfig get services --namespace nginx-gateway nginx-gateway-nginx-gateway-fabric -ojsonpath='{.status.loadBalancer.ingress[0].hostname}')"
 readonly PUBLIC_HOSTNAME_NGINX_US
-until [ -n "${PUBLIC_IP_NGINX_US:-}" ]; do
-  sleep 0.5
-  PUBLIC_IP_NGINX_US="$(dig +short "${PUBLIC_HOSTNAME_NGINX_US}")"
-done
+PUBLIC_IP_NGINX_US="$(dig +short "${PUBLIC_HOSTNAME_NGINX_US}")"
 readonly PUBLIC_IP_NGINX_US
 
-aws route53 change-resource-record-sets \
+CHANGE_RESOURCE_RECORD_ID="$(aws route53 change-resource-record-sets \
   --hosted-zone-id "$(tofu -chdir="tofu" output -raw route53_zone_id)" \
   --no-cli-pager \
   --change-batch file://<(
@@ -100,11 +91,11 @@ aws route53 change-resource-record-sets \
       "Action": "UPSERT",
       "ResourceRecordSet": {
         "Name": "${PODINFO_HOSTNAME_EU}",
-        "Type": "A",
+        "Type": "CNAME",
         "TTL": 15,
         "ResourceRecords": [
           {
-            "Value": "${PUBLIC_IP_NGINX_EU}"
+            "Value": "${PUBLIC_HOSTNAME_NGINX_EU}"
           }
         ]
       }
@@ -113,11 +104,11 @@ aws route53 change-resource-record-sets \
       "Action": "UPSERT",
       "ResourceRecordSet": {
         "Name": "${PODINFO_HOSTNAME_US}",
-        "Type": "A",
+        "Type": "CNAME",
         "TTL": 15,
         "ResourceRecords": [
           {
-            "Value": "${PUBLIC_IP_NGINX_US}"
+            "Value": "${PUBLIC_HOSTNAME_NGINX_US}"
           }
         ]
       }
@@ -141,17 +132,9 @@ aws route53 change-resource-record-sets \
   ]
 }
 EOF
-  )
+  ) | gojq --raw-output '.ChangeInfo.Id')"
 
-until [ -n "$(dig +short "${PODINFO_HOSTNAME_EU}")" ]; do
-  sleep 0.5
-done
-until [ -n "$(dig +short "${PODINFO_HOSTNAME_US}")" ]; do
-  sleep 0.5
-done
-until [ -n "$(dig +short "${PODINFO_HOSTNAME_GLOBAL}")" ]; do
-  sleep 0.5
-done
+aws route53 wait resource-record-sets-changed --id "${CHANGE_RESOURCE_RECORD_ID}"
 
 xdg-open "http://${PODINFO_HOSTNAME_EU}" &>/dev/null || open "http://${PODINFO_HOSTNAME_EU}" &>/dev/null || true
 xdg-open "http://${PODINFO_HOSTNAME_US}" &>/dev/null || open "http://${PODINFO_HOSTNAME_US}" &>/dev/null || true
