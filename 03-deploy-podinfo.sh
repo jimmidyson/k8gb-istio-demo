@@ -17,11 +17,11 @@ helm upgrade --kubeconfig eks-eu.kubeconfig --install podinfo oci://ghcr.io/stef
   --set-string ui.logo=https://upload.wikimedia.org/wikipedia/commons/b/b7/Flag_of_Europe.svg \
   --set-string ui.message="I'm in Europe!"
 
-GATEWAY_HOSTNAME_EU="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways nginx-gateway -ojsonpath='{.spec.listeners[0].hostname}')"
-readonly GATEWAY_HOSTNAME_EU
-readonly PODINFO_HOSTNAME_EU="${GATEWAY_HOSTNAME_EU/#\*/podinfo.eu}"
-
-readonly PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME_EU/#\*/podinfo.global}"
+GATEWAY_HOSTNAME="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways envoy-gateway -ojsonpath='{.spec.listeners[0].hostname}')"
+readonly GATEWAY_HOSTNAME
+readonly PODINFO_HOSTNAME_EU="${GATEWAY_HOSTNAME/#\*/podinfo.eu}"
+readonly PODINFO_HOSTNAME_US="${GATEWAY_HOSTNAME/#\*/podinfo.us}"
+readonly PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME/#\*/podinfo.global}"
 
 cat <<EOF | kubectl apply --kubeconfig eks-eu.kubeconfig --server-side -f -
 apiVersion: gateway.networking.k8s.io/v1beta1
@@ -30,7 +30,7 @@ metadata:
   name: podinfo
 spec:
   parentRefs:
-  - name: nginx-gateway
+  - name: envoy-gateway
     sectionName: http
   hostnames:
   - "${PODINFO_HOSTNAME_EU}"
@@ -45,10 +45,6 @@ helm upgrade --kubeconfig eks-us.kubeconfig --install podinfo oci://ghcr.io/stef
   --set-string ui.logo=https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_the_United_States_%28DoS_ECA_Color_Standard%29.svg \
   --set-string ui.message="I'm in the USA!"
 
-GATEWAY_HOSTNAME_US="$(kubectl --kubeconfig eks-us.kubeconfig get gateways nginx-gateway -ojsonpath='{.spec.listeners[0].hostname}')"
-readonly GATEWAY_HOSTNAME_US
-readonly PODINFO_HOSTNAME_US="${GATEWAY_HOSTNAME_US/#\*/podinfo.us}"
-
 cat <<EOF | kubectl apply --kubeconfig eks-us.kubeconfig --server-side -f -
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: HTTPRoute
@@ -56,7 +52,7 @@ metadata:
   name: podinfo
 spec:
   parentRefs:
-  - name: nginx-gateway
+  - name: envoy-gateway
     sectionName: http
   hostnames:
   - "${PODINFO_HOSTNAME_US}"
@@ -67,18 +63,18 @@ spec:
       port: 9898
 EOF
 
-kubectl --kubeconfig eks-eu.kubeconfig wait --for=jsonpath='{.status.loadBalancer.ingress}' --namespace nginx-gateway services/nginx-gateway-nginx-gateway-fabric
-kubectl --kubeconfig eks-us.kubeconfig wait --for=jsonpath='{.status.loadBalancer.ingress}' --namespace nginx-gateway services/nginx-gateway-nginx-gateway-fabric
+kubectl --kubeconfig eks-eu.kubeconfig wait --for=jsonpath='{.status.addresses[0].value}' gateways/envoy-gateway
+kubectl --kubeconfig eks-us.kubeconfig wait --for=jsonpath='{.status.addresses[0].value}' gateways/envoy-gateway
 
-PUBLIC_HOSTNAME_NGINX_EU="$(kubectl --kubeconfig eks-eu.kubeconfig get services --namespace nginx-gateway nginx-gateway-nginx-gateway-fabric -ojsonpath='{.status.loadBalancer.ingress[0].hostname}')"
-readonly PUBLIC_HOSTNAME_NGINX_EU
-PUBLIC_IP_NGINX_EU="$(dig +short "${PUBLIC_HOSTNAME_NGINX_EU}")"
-readonly PUBLIC_IP_NGINX_EU
+PUBLIC_HOSTNAME_EU="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways envoy-gateway -ojsonpath='{.status.addresses[0].value}')"
+readonly PUBLIC_HOSTNAME_EU
+PUBLIC_IP_EU="$(dig +short "${PUBLIC_HOSTNAME_EU}")"
+readonly PUBLIC_IP_EU
 
-PUBLIC_HOSTNAME_NGINX_US="$(kubectl --kubeconfig eks-us.kubeconfig get services --namespace nginx-gateway nginx-gateway-nginx-gateway-fabric -ojsonpath='{.status.loadBalancer.ingress[0].hostname}')"
-readonly PUBLIC_HOSTNAME_NGINX_US
-PUBLIC_IP_NGINX_US="$(dig +short "${PUBLIC_HOSTNAME_NGINX_US}")"
-readonly PUBLIC_IP_NGINX_US
+PUBLIC_HOSTNAME_US="$(kubectl --kubeconfig eks-us.kubeconfig get gateways envoy-gateway -ojsonpath='{.status.addresses[0].value}')"
+readonly PUBLIC_HOSTNAME_US
+PUBLIC_IP_US="$(dig +short "${PUBLIC_HOSTNAME_US}")"
+readonly PUBLIC_IP_US
 
 CHANGE_RESOURCE_RECORD_ID="$(aws route53 change-resource-record-sets \
   --hosted-zone-id "$(tofu -chdir="tofu" output -raw route53_zone_id)" \
@@ -95,7 +91,7 @@ CHANGE_RESOURCE_RECORD_ID="$(aws route53 change-resource-record-sets \
         "TTL": 15,
         "ResourceRecords": [
           {
-            "Value": "${PUBLIC_HOSTNAME_NGINX_EU}"
+            "Value": "${PUBLIC_HOSTNAME_EU}"
           }
         ]
       }
@@ -108,7 +104,7 @@ CHANGE_RESOURCE_RECORD_ID="$(aws route53 change-resource-record-sets \
         "TTL": 15,
         "ResourceRecords": [
           {
-            "Value": "${PUBLIC_HOSTNAME_NGINX_US}"
+            "Value": "${PUBLIC_HOSTNAME_US}"
           }
         ]
       }
@@ -121,10 +117,10 @@ CHANGE_RESOURCE_RECORD_ID="$(aws route53 change-resource-record-sets \
         "TTL": 15,
         "ResourceRecords": [
           {
-            "Value": "${PUBLIC_IP_NGINX_EU}"
+            "Value": "${PUBLIC_IP_EU}"
           },
           {
-            "Value": "${PUBLIC_IP_NGINX_US}"
+            "Value": "${PUBLIC_IP_US}"
           }
         ]
       }

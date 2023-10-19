@@ -13,27 +13,22 @@ if ! aws sts get-caller-identity &>/dev/null; then
   exit 1
 fi
 
-if kubectl --kubeconfig eks-eu.kubeconfig get gateways nginx-gateway &>/dev/null; then
-  GATEWAY_HOSTNAME_EU="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways nginx-gateway -ojsonpath='{.spec.listeners[0].hostname}')"
-  readonly GATEWAY_HOSTNAME_EU
-  readonly PODINFO_HOSTNAME_EU="${GATEWAY_HOSTNAME_EU/#\*/podinfo.eu}"
+if kubectl --kubeconfig eks-eu.kubeconfig get gateways envoy-gateway &>/dev/null; then
+  GATEWAY_HOSTNAME="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways envoy-gateway -ojsonpath='{.spec.listeners[0].hostname}')"
+  readonly GATEWAY_HOSTNAME
+  readonly PODINFO_HOSTNAME_EU="${GATEWAY_HOSTNAME/#\*/podinfo.eu}"
+  readonly PODINFO_HOSTNAME_US="${GATEWAY_HOSTNAME/#\*/podinfo.us}"
+  readonly PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME/#\*/podinfo.global}"
 
-  readonly PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME_EU/#\*/podinfo.global}"
+  PUBLIC_HOSTNAME_EU="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways envoy-gateway -ojsonpath='{.status.addresses[0].value}')"
+  readonly PUBLIC_HOSTNAME_EU
+  PUBLIC_IP_EU="$(dig +short "${PUBLIC_HOSTNAME_EU}")"
+  readonly PUBLIC_IP_EU
 
-  GATEWAY_HOSTNAME_US="$(kubectl --kubeconfig eks-us.kubeconfig get gateways nginx-gateway -ojsonpath='{.spec.listeners[0].hostname}')"
-  readonly GATEWAY_HOSTNAME_US
-  readonly PODINFO_HOSTNAME_US="${GATEWAY_HOSTNAME_US/#\*/podinfo.us}"
-
-  PUBLIC_HOSTNAME_NGINX_EU="$(kubectl --kubeconfig eks-eu.kubeconfig get services -n nginx-gateway nginx-gateway-nginx-gateway-fabric -ojsonpath='{.status.loadBalancer.ingress[0].hostname}')"
-  readonly PUBLIC_HOSTNAME_NGINX_EU
-
-  PUBLIC_IP_NGINX_EU="$(dig +short "${PUBLIC_HOSTNAME_NGINX_EU}")"
-  readonly PUBLIC_IP_NGINX_EU
-
-  PUBLIC_HOSTNAME_NGINX_US="$(kubectl --kubeconfig eks-us.kubeconfig get services -n nginx-gateway nginx-gateway-nginx-gateway-fabric -ojsonpath='{.status.loadBalancer.ingress[0].hostname}')"
-  readonly PUBLIC_HOSTNAME_NGINX_US
-  PUBLIC_IP_NGINX_US="$(dig +short "${PUBLIC_HOSTNAME_NGINX_US}")"
-  readonly PUBLIC_IP_NGINX_US
+  PUBLIC_HOSTNAME_US="$(kubectl --kubeconfig eks-us.kubeconfig get gateways envoy-gateway -ojsonpath='{.status.addresses[0].value}')"
+  readonly PUBLIC_HOSTNAME_US
+  PUBLIC_IP_US="$(dig +short "${PUBLIC_HOSTNAME_US}")"
+  readonly PUBLIC_IP_US
 
   aws route53 change-resource-record-sets \
     --hosted-zone-id "$(tofu -chdir="tofu" output -raw route53_zone_id)" \
@@ -50,7 +45,7 @@ if kubectl --kubeconfig eks-eu.kubeconfig get gateways nginx-gateway &>/dev/null
         "TTL": 15,
         "ResourceRecords": [
           {
-            "Value": "${PUBLIC_HOSTNAME_NGINX_EU}"
+            "Value": "${PUBLIC_HOSTNAME_EU}"
           }
         ]
       }
@@ -63,7 +58,7 @@ if kubectl --kubeconfig eks-eu.kubeconfig get gateways nginx-gateway &>/dev/null
         "TTL": 15,
         "ResourceRecords": [
           {
-            "Value": "${PUBLIC_HOSTNAME_NGINX_US}"
+            "Value": "${PUBLIC_HOSTNAME_US}"
           }
         ]
       }
@@ -76,10 +71,10 @@ if kubectl --kubeconfig eks-eu.kubeconfig get gateways nginx-gateway &>/dev/null
         "TTL": 15,
         "ResourceRecords": [
           {
-            "Value": "${PUBLIC_IP_NGINX_EU}"
+            "Value": "${PUBLIC_IP_EU}"
           },
           {
-            "Value": "${PUBLIC_IP_NGINX_US}"
+            "Value": "${PUBLIC_IP_US}"
           }
         ]
       }
@@ -89,6 +84,9 @@ if kubectl --kubeconfig eks-eu.kubeconfig get gateways nginx-gateway &>/dev/null
 EOF
     )
 fi
+
+kubectl --kubeconfig eks-eu.kubeconfig delete gateways --all --all-namespaces
+kubectl --kubeconfig eks-us.kubeconfig delete gateways --all --all-namespaces
 
 eval "$(kubectl --kubeconfig eks-eu.kubeconfig get services -A -ojson | gojq -r '.items[] | select(.spec.type == "LoadBalancer") | "kubectl delete --kubeconfig eks-eu.kubeconfig services --namespace="+.metadata.namespace+" "+.metadata.name')"
 eval "$(kubectl --kubeconfig eks-us.kubeconfig get services -A -ojson | gojq -r '.items[] | select(.spec.type == "LoadBalancer") | "kubectl delete --kubeconfig eks-us.kubeconfig services --namespace="+.metadata.namespace+" "+.metadata.name')"

@@ -14,37 +14,51 @@ if ! aws sts get-caller-identity &>/dev/null; then
 fi
 
 kubectl --kubeconfig eks-eu.kubeconfig apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0-rc1/standard-install.yaml
-helm upgrade --kubeconfig eks-eu.kubeconfig --install nginx-gateway oci://ghcr.io/nginxinc/charts/nginx-gateway-fabric --version 0.0.0-edge --namespace nginx-gateway --create-namespace --wait --wait-for-jobs
+helm upgrade --kubeconfig eks-eu.kubeconfig --install envoy-gateway oci://docker.io/envoyproxy/gateway-helm --version v0.5.0 -n envoy-gateway-system --create-namespace --wait --wait-for-jobs
 
 cat <<EOF | kubectl --kubeconfig eks-eu.kubeconfig apply --server-side -f -
 apiVersion: gateway.networking.k8s.io/v1beta1
-kind: Gateway
+kind: GatewayClass
 metadata:
-  name: nginx-gateway
+  name: envoy-gateway
 spec:
-  gatewayClassName: nginx
-  listeners:
-  - name: http
-    port: 80
-    protocol: HTTP
-    hostname: "*.nginx.kubecon-na-2023.$(tofu -chdir="tofu" output -raw route53_zone_name)"
-EOF
-
-kubectl --kubeconfig eks-us.kubeconfig apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0-rc1/standard-install.yaml
-helm upgrade --kubeconfig eks-us.kubeconfig --install nginx-gateway oci://ghcr.io/nginxinc/charts/nginx-gateway-fabric --version 0.0.0-edge --namespace nginx-gateway --create-namespace --wait --wait-for-jobs
-
-cat <<EOF | kubectl --kubeconfig eks-us.kubeconfig apply --server-side -f -
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+---
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: Gateway
 metadata:
-  name: nginx-gateway
+  name: envoy-gateway
 spec:
-  gatewayClassName: nginx
+  gatewayClassName: envoy-gateway
   listeners:
   - name: http
     port: 80
     protocol: HTTP
-    hostname: "*.nginx.kubecon-na-2023.$(tofu -chdir="tofu" output -raw route53_zone_name)"
+    hostname: "*.envoy.kubecon-na-2023.$(tofu -chdir="tofu" output -raw route53_zone_name)"
+EOF
+
+kubectl --kubeconfig eks-us.kubeconfig apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0-rc1/standard-install.yaml
+helm upgrade --kubeconfig eks-us.kubeconfig --install envoy-gateway oci://docker.io/envoyproxy/gateway-helm --version v0.5.0 -n envoy-gateway-system --create-namespace --wait --wait-for-jobs
+
+cat <<EOF | kubectl --kubeconfig eks-us.kubeconfig apply --server-side -f -
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: GatewayClass
+metadata:
+  name: envoy-gateway
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: Gateway
+metadata:
+  name: envoy-gateway
+spec:
+  gatewayClassName: envoy-gateway
+  listeners:
+  - name: http
+    port: 80
+    protocol: HTTP
+    hostname: "*.envoy.kubecon-na-2023.$(tofu -chdir="tofu" output -raw route53_zone_name)"
 EOF
 
 popd &>/dev/null
