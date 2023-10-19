@@ -101,4 +101,5 @@ eval "$(kubectl --kubeconfig eks-us.kubeconfig get services -A -ojson | gojq -r 
 
 tofu -chdir="${SCRIPT_DIR}/tofu" destroy -auto-approve -input=false
 
-git clean -fdx
+# Duplicate --force flags are required to remove nested git repositories downloaded for tofu modules.
+git clean -dx --force --force --exclude=.devbox
