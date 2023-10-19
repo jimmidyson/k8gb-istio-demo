@@ -3,7 +3,7 @@ provider "aws" {
   region = "us-west-2"
 }
 
-# Filter out local zones, which are not currently supported 
+# Filter out local zones, which are not currently supported
 # with managed node groups
 data "aws_availability_zones" "available-us" {
   provider = aws.us

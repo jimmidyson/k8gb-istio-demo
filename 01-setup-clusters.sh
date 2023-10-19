@@ -3,7 +3,7 @@ set -euo pipefail
 IFS=$'\n\t'
 
 # Get the current directory
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 readonly SCRIPT_DIR
 
 pushd "${SCRIPT_DIR}" &>/dev/null

@@ -140,6 +140,46 @@
           "store_path": "/nix/store/m2la4ycmngi9m8f7sd74yll13jddfd64-opentofu-1.6.0-alpha2"
         }
       }
+    },
+    "pre-commit@latest": {
+      "last_modified": "2023-10-02T15:46:12Z",
+      "resolved": "github:NixOS/nixpkgs/0c7ffbc66e6d78c50c38e717ec91a2a14e0622fb#pre-commit",
+      "source": "devbox-search",
+      "version": "3.3.3",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/7nzdf4rf58wrwrzmj13y060h02avsj31-pre-commit-3.3.3"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/jgj3fxxbl0ngrhnx0b1j439sbnpqrx4y-pre-commit-3.3.3"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/4b2d2l0wgzr8zf15imb2na69gcb82x2y-pre-commit-3.3.3"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/47kf6an6cdf5467vmjnc83d74gj6cb1s-pre-commit-3.3.3"
+        }
+      }
+    },
+    "shfmt@latest": {
+      "last_modified": "2023-10-06T22:17:47Z",
+      "resolved": "github:NixOS/nixpkgs/b604023e0a5549b65da3040a07d2beb29ac9fc63#shfmt",
+      "source": "devbox-search",
+      "version": "3.7.0",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/0iiqg1w0j50y8ny36ax9c8wmy1r5bx9c-shfmt-3.7.0"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/ybcmc2a9ics28sd7j7rl41hld1al243j-shfmt-3.7.0"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/g6hb3ddihyxqww9i2fgndsdzilc9x725-shfmt-3.7.0"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/m3accnxhbcsh2i9yf04din5brm2ylj40-shfmt-3.7.0"
+        }
+      }
     }
   }
 }

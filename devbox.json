@@ -6,6 +6,8 @@
     "dig@latest",
     "kubectl@latest",
     "kubernetes-helm@latest",
-    "opentofu@latest"
+    "opentofu@latest",
+    "pre-commit@latest",
+    "shfmt@latest"
   ]
 }

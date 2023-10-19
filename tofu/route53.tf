@@ -1,5 +1,5 @@
 data "aws_route53_zone" "ksphere_platform" {
-  name         = "ksphere-platform.d2iq.cloud."
+  name         = "dkp2demo.com."
   provider = aws.us
 }
 

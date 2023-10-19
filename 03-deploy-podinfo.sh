@@ -3,7 +3,7 @@ set -euo pipefail
 IFS=$'\n\t'
 
 # Get the current directory
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 readonly SCRIPT_DIR
 
 pushd "${SCRIPT_DIR}" &>/dev/null
@@ -92,7 +92,8 @@ readonly PUBLIC_IP_NGINX_US
 aws route53 change-resource-record-sets \
   --hosted-zone-id "$(tofu -chdir="tofu" output -raw route53_zone_id)" \
   --no-cli-pager \
-  --change-batch file://<(cat <<EOF
+  --change-batch file://<(
+    cat <<EOF
 {
   "Changes": [
     {
@@ -140,7 +141,7 @@ aws route53 change-resource-record-sets \
   ]
 }
 EOF
-)
+  )
 
 until [ -n "$(dig +short "${PODINFO_HOSTNAME_EU}")" ]; do
   sleep 0.5

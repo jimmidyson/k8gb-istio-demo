@@ -3,7 +3,7 @@ set -euo pipefail
 IFS=$'\n\t'
 
 # Get the current directory
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 readonly SCRIPT_DIR
 
 pushd "${SCRIPT_DIR}" &>/dev/null
@@ -27,7 +27,7 @@ spec:
   - name: http
     port: 80
     protocol: HTTP
-    hostname: "*.nginx.$(tofu -chdir="tofu" output -raw route53_zone_name)"
+    hostname: "*.nginx.kubecon-na-2023.$(tofu -chdir="tofu" output -raw route53_zone_name)"
 EOF
 
 kubectl --kubeconfig eks-us.kubeconfig apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0-rc1/standard-install.yaml
@@ -44,7 +44,7 @@ spec:
   - name: http
     port: 80
     protocol: HTTP
-    hostname: "*.nginx.$(tofu -chdir="tofu" output -raw route53_zone_name)"
+    hostname: "*.nginx.kubecon-na-2023.$(tofu -chdir="tofu" output -raw route53_zone_name)"
 EOF
 
 popd &>/dev/null
