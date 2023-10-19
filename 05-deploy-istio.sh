@@ -108,6 +108,12 @@ kind: IstioOperator
 spec:
   meshConfig:
     accessLogFile: /dev/stdout
+    defaultConfig:
+      proxyMetadata:
+        # Enable basic DNS proxying
+        ISTIO_META_DNS_CAPTURE: "true"
+        # Enable automatic address allocation, optional
+        ISTIO_META_DNS_AUTO_ALLOCATE: "true"
   values:
     global:
       meshID: global-mesh
@@ -187,6 +193,12 @@ kind: IstioOperator
 spec:
   meshConfig:
     accessLogFile: /dev/stdout
+    defaultConfig:
+      proxyMetadata:
+        # Enable basic DNS proxying
+        ISTIO_META_DNS_CAPTURE: "true"
+        # Enable automatic address allocation, optional
+        ISTIO_META_DNS_AUTO_ALLOCATE: "true"
   values:
     global:
       meshID: global-mesh
@@ -266,5 +278,11 @@ istioctl --kubeconfig eks-eu.kubeconfig create-remote-secret \
 istioctl --kubeconfig eks-us.kubeconfig create-remote-secret \
   --name=eks-us |
   kubectl --kubeconfig eks-eu.kubeconfig apply --server-side -f -
+
+kubectl --kubeconfig eks-eu.kubeconfig label namespace default istio-injection=enabled --overwrite
+kubectl --kubeconfig eks-eu.kubeconfig rollout restart deployment podinfo podinfo-stateful
+
+kubectl --kubeconfig eks-us.kubeconfig label namespace default istio-injection=enabled --overwrite
+kubectl --kubeconfig eks-us.kubeconfig rollout restart deployment podinfo
 
 popd &>/dev/null
