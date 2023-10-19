@@ -96,6 +96,9 @@ module "eks-us" {
 module "iam_assumable_role_admin_us" {
   source                        = "terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"
   version                       = "4.6.0"
+  providers = {
+    aws = aws.us
+  }
   create_role                   = true
   role_name                     = "external-dns-${module.eks-us.cluster_name}"
   provider_url                  = replace(module.eks-us.cluster_oidc_issuer_url, "https://", "")
