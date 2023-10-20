@@ -101,6 +101,26 @@
         }
       }
     },
+    "curl@latest": {
+      "last_modified": "2023-10-15T14:24:03Z",
+      "resolved": "github:NixOS/nixpkgs/12bdeb01ff9e2d3917e6a44037ed7df6e6c3df9d#curl",
+      "source": "devbox-search",
+      "version": "8.3.0",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/v95bszfrgyzvgai6fnxwkdxsrhs941lc-curl-8.3.0-bin"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/k3yxgmla46dxciq911g84rwnb6rkxkih-curl-8.3.0-bin"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/q9v7mb3gmafzrvx2q505vv90ax77br45-curl-8.3.0-bin"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/yiip8b2ks99ixn5jf9jlx0bsxl5r2h2m-curl-8.3.0-bin"
+        }
+      }
+    },
     "dig@latest": {
       "last_modified": "2023-10-08T09:32:01Z",
       "resolved": "github:NixOS/nixpkgs/2646b294a146df2781b1ca49092450e8a32814e1#dig",
@@ -118,6 +138,26 @@
         },
         "x86_64-linux": {
           "store_path": "/nix/store/6sjg14zl6lj9xnq1yg7srdqsf2ixnja2-bind-9.18.19-dnsutils"
+        }
+      }
+    },
+    "gojq@latest": {
+      "last_modified": "2023-09-27T18:02:17Z",
+      "resolved": "github:NixOS/nixpkgs/517501bcf14ae6ec47efd6a17dda0ca8e6d866f9#gojq",
+      "source": "devbox-search",
+      "version": "0.12.13",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/map8vmw85f5r36bj4sb9wpj00ajmdbap-gojq-0.12.13"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/rx6rphn7sahbkdqbh37g10y1867pm3k0-gojq-0.12.13"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/v0zsm8x3p7fiyflp5gj65cyw30sgwwkp-gojq-0.12.13"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/lfa5m3wrcjg11dqzrv801cbirbzhi8s2-gojq-0.12.13"
         }
       }
     },

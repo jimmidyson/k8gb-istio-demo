@@ -63,18 +63,18 @@ spec:
       port: 9898
 EOF
 
-kubectl --kubeconfig eks-eu.kubeconfig wait --for=jsonpath='{.status.addresses[0].value}' gateways/envoy-gateway
-kubectl --kubeconfig eks-us.kubeconfig wait --for=jsonpath='{.status.addresses[0].value}' gateways/envoy-gateway
+kubectl --kubeconfig eks-eu.kubeconfig wait --for=condition=programmed gateways.gateway.networking.k8s.io envoy-gateway
+kubectl --kubeconfig eks-us.kubeconfig wait --for=condition=programmed gateways.gateway.networking.k8s.io envoy-gateway
 
 PUBLIC_HOSTNAME_EU="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways envoy-gateway -ojsonpath='{.status.addresses[0].value}')"
 readonly PUBLIC_HOSTNAME_EU
-PUBLIC_IP_EU="$(dig +short "${PUBLIC_HOSTNAME_EU}")"
-readonly PUBLIC_IP_EU
+read -ra PUBLIC_IPS_EU < <(dig +short "${PUBLIC_HOSTNAME_EU}")
+readonly PUBLIC_IPS_EU
 
 PUBLIC_HOSTNAME_US="$(kubectl --kubeconfig eks-us.kubeconfig get gateways envoy-gateway -ojsonpath='{.status.addresses[0].value}')"
 readonly PUBLIC_HOSTNAME_US
-PUBLIC_IP_US="$(dig +short "${PUBLIC_HOSTNAME_US}")"
-readonly PUBLIC_IP_US
+read -ra PUBLIC_IPS_US < <(dig +short "${PUBLIC_HOSTNAME_US}")
+readonly PUBLIC_IPS_US
 
 CHANGE_RESOURCE_RECORD_ID="$(aws route53 change-resource-record-sets \
   --hosted-zone-id "$(tofu -chdir="tofu" output -raw route53_zone_id)" \
@@ -115,14 +115,7 @@ CHANGE_RESOURCE_RECORD_ID="$(aws route53 change-resource-record-sets \
         "Name": "${PODINFO_HOSTNAME_GLOBAL}",
         "Type": "A",
         "TTL": 15,
-        "ResourceRecords": [
-          {
-            "Value": "${PUBLIC_IP_EU}"
-          },
-          {
-            "Value": "${PUBLIC_IP_US}"
-          }
-        ]
+        "ResourceRecords": $(gojq --compact-output --null-input $'$ARGS.positional | map({"Value":.})' --args -- "${PUBLIC_IPS_EU[@]}" "${PUBLIC_IPS_US[@]}")
       }
     }
   ]
@@ -132,8 +125,14 @@ EOF
 
 aws route53 wait resource-record-sets-changed --id "${CHANGE_RESOURCE_RECORD_ID}"
 
-xdg-open "http://${PODINFO_HOSTNAME_EU}" &>/dev/null || open "http://${PODINFO_HOSTNAME_EU}" &>/dev/null || true
-xdg-open "http://${PODINFO_HOSTNAME_US}" &>/dev/null || open "http://${PODINFO_HOSTNAME_US}" &>/dev/null || true
-xdg-open "http://${PODINFO_HOSTNAME_GLOBAL}" &>/dev/null || open "http://${PODINFO_HOSTNAME_GLOBAL}" &>/dev/null || true
+echo
+echo 'Testing EU...'
+for _ in {1..10}; do curl -fsSL "http://${PODINFO_HOSTNAME_EU}" | gojq '.message'; done
+echo
+echo 'Testing US...'
+for _ in {1..10}; do curl -fsSL "http://${PODINFO_HOSTNAME_US}" | gojq '.message'; done
+echo
+echo 'Testing global...'
+for _ in {1..10}; do curl -fsSL "http://${PODINFO_HOSTNAME_GLOBAL}" | gojq '.message'; done
 
 popd &>/dev/null

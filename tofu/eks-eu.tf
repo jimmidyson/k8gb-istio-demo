@@ -85,8 +85,8 @@ module "eks-eu" {
       instance_types = ["m5.2xlarge"]
 
       min_size     = 1
-      max_size     = 3
-      desired_size = 2
+      max_size     = 1
+      desired_size = 1
     }
   }
 

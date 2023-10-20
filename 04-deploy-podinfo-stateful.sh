@@ -54,8 +54,14 @@ spec:
       port: 9898
 EOF
 
-xdg-open "http://${PODINFO_HOSTNAME_EU}/stateful" &>/dev/null || open "http://${PODINFO_HOSTNAME_EU}/stateful" &>/dev/null || true
-xdg-open "http://${PODINFO_HOSTNAME_US}/stateful" &>/dev/null || open "http://${PODINFO_HOSTNAME_US}/stateful" &>/dev/null || true
-xdg-open "http://${PODINFO_HOSTNAME_GLOBAL}/stateful" &>/dev/null || open "http://${PODINFO_HOSTNAME_GLOBAL}/stateful" &>/dev/null || true
+echo
+echo 'Testing EU stateful...'
+for _ in {1..10}; do curl -fsSL "http://${PODINFO_HOSTNAME_EU}/stateful" | gojq '.message'; done
+echo
+echo 'Testing US stateful...'
+for _ in {1..10}; do curl -fsSL "http://${PODINFO_HOSTNAME_US}/stateful" | gojq '.message'; done
+echo
+echo 'Testing global stateful...'
+for _ in {1..10}; do curl -fsSL "http://${PODINFO_HOSTNAME_GLOBAL}/stateful" | gojq '.message'; done
 
 popd &>/dev/null

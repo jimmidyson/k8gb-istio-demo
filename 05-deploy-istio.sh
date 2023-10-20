@@ -235,10 +235,108 @@ spec:
   - "${PODINFO_HOSTNAME}"
   - "${PODINFO_HOSTNAME_GLOBAL}"
   rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /stateful
+    backendRefs:
+    - name: podinfo-stateful
+      port: 9898
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /
   - backendRefs:
     - name: podinfo
       port: 9898
 EOF
 done
+
+GATEWAY_HOSTNAME="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways --namespace istio-ingress istio-gateway -ojsonpath='{.spec.listeners[0].hostname}')"
+readonly GATEWAY_HOSTNAME
+readonly PODINFO_HOSTNAME_EU="${GATEWAY_HOSTNAME/#\*/podinfo.eu}"
+readonly PODINFO_HOSTNAME_US="${GATEWAY_HOSTNAME/#\*/podinfo.us}"
+readonly PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME/#\*/podinfo.global}"
+
+PUBLIC_HOSTNAME_EU="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways --namespace istio-ingress istio-gateway -ojsonpath='{.status.addresses[0].value}')"
+readonly PUBLIC_HOSTNAME_EU
+read -ra PUBLIC_IPS_EU < <(dig +short "${PUBLIC_HOSTNAME_EU}")
+readonly PUBLIC_IPS_EU
+
+PUBLIC_HOSTNAME_US="$(kubectl --kubeconfig eks-us.kubeconfig get gateways --namespace istio-ingress istio-gateway -ojsonpath='{.status.addresses[0].value}')"
+readonly PUBLIC_HOSTNAME_US
+read -ra PUBLIC_IPS_US < <(dig +short "${PUBLIC_HOSTNAME_US}")
+readonly PUBLIC_IPS_US
+
+CHANGE_RESOURCE_RECORD_ID="$(aws route53 change-resource-record-sets \
+  --hosted-zone-id "$(tofu -chdir="tofu" output -raw route53_zone_id)" \
+  --no-cli-pager \
+  --change-batch file://<(
+    cat <<EOF
+{
+  "Changes": [
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "${PODINFO_HOSTNAME_EU}",
+        "Type": "CNAME",
+        "TTL": 15,
+        "ResourceRecords": [
+          {
+            "Value": "${PUBLIC_HOSTNAME_EU}"
+          }
+        ]
+      }
+    },
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "${PODINFO_HOSTNAME_US}",
+        "Type": "CNAME",
+        "TTL": 15,
+        "ResourceRecords": [
+          {
+            "Value": "${PUBLIC_HOSTNAME_US}"
+          }
+        ]
+      }
+    },
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "${PODINFO_HOSTNAME_GLOBAL}",
+        "Type": "A",
+        "TTL": 15,
+        "ResourceRecords": $(gojq --compact-output --null-input $'$ARGS.positional | map({"Value":.})' --args -- "${PUBLIC_IPS_EU[@]}" "${PUBLIC_IPS_US[@]}")
+      }
+    }
+  ]
+}
+EOF
+  ) | gojq --raw-output '.ChangeInfo.Id')"
+
+aws route53 wait resource-record-sets-changed --id "${CHANGE_RESOURCE_RECORD_ID}"
+
+echo
+echo 'Testing EU...'
+for _ in {1..10}; do curl -fsSL "http://${PODINFO_HOSTNAME_EU}" | gojq '.message'; done
+echo
+echo 'Testing US...'
+for _ in {1..10}; do curl -fsSL "http://${PODINFO_HOSTNAME_US}" | gojq '.message'; done
+echo
+echo 'Testing global...'
+for _ in {1..10}; do curl -fsSL "http://${PODINFO_HOSTNAME_GLOBAL}" | gojq '.message'; done
+
+echo
+echo 'Testing EU stateful...'
+for _ in {1..10}; do curl -fsSL "http://${PODINFO_HOSTNAME_EU}/stateful" | gojq '.message'; done
+echo
+echo 'Testing US stateful...'
+for _ in {1..10}; do curl -fsSL "http://${PODINFO_HOSTNAME_US}/stateful" | gojq '.message'; done
+echo
+echo 'Testing global stateful...'
+for _ in {1..10}; do curl -fsSL "http://${PODINFO_HOSTNAME_GLOBAL}/stateful" | gojq '.message'; done
 
 popd &>/dev/null
