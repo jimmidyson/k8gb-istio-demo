@@ -2,7 +2,7 @@
 /tofu/.terraform*
 /tofu/*.tfstate*
 /*.kubeconfig
-/*.pem
-/*.conf
-/*.csr
-/*.srl
+*.pem
+*.conf
+*.csr
+*.srl

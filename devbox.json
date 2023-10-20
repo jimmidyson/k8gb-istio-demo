@@ -4,11 +4,13 @@
     "awscli2@latest",
     "bash@latest",
     "dig@latest",
-    "istioctl@latest",
+    "path:./hack/flakes/istioctl",
     "kubectl@latest",
     "kubernetes-helm@latest",
     "opentofu@latest",
     "pre-commit@latest",
-    "shfmt@latest"
+    "shfmt@latest",
+    "asciinema@latest",
+    "asciinema-agg@latest"
   ]
 }

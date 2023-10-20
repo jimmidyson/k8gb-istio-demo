@@ -1,6 +1,46 @@
 {
   "lockfile_version": "1",
   "packages": {
+    "asciinema-agg@latest": {
+      "last_modified": "2023-10-03T09:29:46Z",
+      "resolved": "github:NixOS/nixpkgs/e2b8feae8470705c3f331901ae057da3095cea10#asciinema-agg",
+      "source": "devbox-search",
+      "version": "1.4.3",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/il1qa18w2mrn13zyffbl95lrgzx3h0xc-agg-1.4.3"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/qawn6xyf4kvbyf6nz98i70ls8gr2c38w-agg-1.4.3"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/vakncdcf46m55gq5ndc78xfj64vr3nav-agg-1.4.3"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/yp0ph77ajs9zm8jkgcfr0fdcfl75r1vg-agg-1.4.3"
+        }
+      }
+    },
+    "asciinema@latest": {
+      "last_modified": "2023-09-27T18:02:17Z",
+      "resolved": "github:NixOS/nixpkgs/517501bcf14ae6ec47efd6a17dda0ca8e6d866f9#asciinema",
+      "source": "devbox-search",
+      "version": "2.3.0",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/w4qfqykcxm9dg8pjvncrgmljimw7vsgd-asciinema-2.3.0"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/rrmhxacr0h7scfbfyikwgqkyyi3grz41-asciinema-2.3.0"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/c38v2q9l28hvdlvd5lx71n6n533h29l3-asciinema-2.3.0"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/9a8yh7ndgxq0ha928p7crcxwz8jbhakw-asciinema-2.3.0"
+        }
+      }
+    },
     "aws-iam-authenticator@latest": {
       "last_modified": "2023-09-27T18:02:17Z",
       "resolved": "github:NixOS/nixpkgs/517501bcf14ae6ec47efd6a17dda0ca8e6d866f9#aws-iam-authenticator",
@@ -78,26 +118,6 @@
         },
         "x86_64-linux": {
           "store_path": "/nix/store/6sjg14zl6lj9xnq1yg7srdqsf2ixnja2-bind-9.18.19-dnsutils"
-        }
-      }
-    },
-    "istioctl@latest": {
-      "last_modified": "2023-09-27T18:02:17Z",
-      "resolved": "github:NixOS/nixpkgs/517501bcf14ae6ec47efd6a17dda0ca8e6d866f9#istioctl",
-      "source": "devbox-search",
-      "version": "1.18.2",
-      "systems": {
-        "aarch64-darwin": {
-          "store_path": "/nix/store/0ivc1w9w70g0z6l1f3plfba06n000ggk-istioctl-1.18.2"
-        },
-        "aarch64-linux": {
-          "store_path": "/nix/store/37g3xmssfyq0vdj54paim1mnl37z33gn-istioctl-1.18.2"
-        },
-        "x86_64-darwin": {
-          "store_path": "/nix/store/qc8z8y5i9f194g5xk4cdpznwca71ixwz-istioctl-1.18.2"
-        },
-        "x86_64-linux": {
-          "store_path": "/nix/store/4335sa93kvyaah5f7b6l6m2dhm7flawv-istioctl-1.18.2"
         }
       }
     },
