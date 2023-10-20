@@ -13,6 +13,13 @@ if ! aws sts get-caller-identity &>/dev/null; then
   exit 1
 fi
 
+kubectl create namespace istio-system --dry-run=client -oyaml |
+  kubectl label --dry-run=client -oyaml --local -f - topology.istio.io/network=network-eu |
+  kubectl --kubeconfig eks-eu.kubeconfig apply --server-side -f -
+kubectl create namespace istio-system --dry-run=client -oyaml |
+  kubectl label --dry-run=client -oyaml --local -f - topology.istio.io/network=network-us |
+  kubectl --kubeconfig eks-us.kubeconfig apply --server-side -f -
+
 mkdir -p certs
 if [ ! -f certs/root-key.pem ]; then
   openssl genrsa -out certs/root-key.pem 4096
@@ -87,10 +94,6 @@ EOF
   if [ ! -f "certs/${cluster}/cert-chain.pem" ]; then
     cat "certs/${cluster}/ca-cert.pem" certs/root-cert.pem >"certs/${cluster}/cert-chain.pem"
   fi
-
-  kubectl create namespace istio-system --dry-run=client -oyaml |
-    kubectl label --dry-run=client -oyaml --local -f - topology.istio.io/network="network-${cluster/#eks-/}" |
-    kubectl --kubeconfig "${cluster}.kubeconfig" apply --server-side -f -
 
   kubectl create secret generic cacerts --dry-run=client -oyaml \
     --from-file="certs/${cluster}/ca-cert.pem" \
@@ -207,10 +210,10 @@ metadata:
 spec:
   gatewayClassName: istio
   listeners:
-  - name: default
-    hostname: "*.istio.kubecon-na-2023.$(tofu -chdir="tofu" output -raw route53_zone_name)"
+  - name: http
     port: 80
     protocol: HTTP
+    hostname: "*.istio.kubecon-na-2023.$(tofu -chdir="tofu" output -raw route53_zone_name)"
     allowedRoutes:
       namespaces:
         from: All
@@ -231,6 +234,7 @@ spec:
   parentRefs:
   - name: istio-gateway
     namespace: istio-ingress
+    sectionName: http
   hostnames:
   - "${PODINFO_HOSTNAME}"
   - "${PODINFO_HOSTNAME_GLOBAL}"

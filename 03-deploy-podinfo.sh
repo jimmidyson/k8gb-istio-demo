@@ -13,65 +13,57 @@ if ! aws sts get-caller-identity &>/dev/null; then
   exit 1
 fi
 
-helm upgrade --kubeconfig eks-eu.kubeconfig --install podinfo oci://ghcr.io/stefanprodan/charts/podinfo --namespace default --wait --wait-for-jobs \
-  --set-string ui.logo=https://upload.wikimedia.org/wikipedia/commons/b/b7/Flag_of_Europe.svg \
-  --set-string ui.message="I'm in Europe!"
+declare -rA messages=(
+  ['eks-eu']="I'm in Europe"
+  ['eks-us']="I'm in the USA"
+)
+declare -rA logos=(
+  ['eks-eu']='https://upload.wikimedia.org/wikipedia/commons/b/b7/Flag_of_Europe.svg'
+  ['eks-us']='https://upload.wikimedia.org/wikipedia/commons/b/b7/Flag_of_Europe.svg'
+)
 
-GATEWAY_HOSTNAME="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways envoy-gateway -ojsonpath='{.spec.listeners[0].hostname}')"
+for cluster in eks-eu eks-us; do
+  helm upgrade --kubeconfig "${cluster}.kubeconfig" --install podinfo oci://ghcr.io/stefanprodan/charts/podinfo \
+    --namespace default --wait --wait-for-jobs \
+    --set-string ui.logo="${logos[${cluster}]}" \
+    --set-string ui.message="${messages[${cluster}]}"
+
+  GATEWAY_HOSTNAME="$(kubectl --kubeconfig "${cluster}.kubeconfig" get gateways --namespace envoy-ingress envoy-gateway -ojsonpath='{.spec.listeners[0].hostname}')"
+  PODINFO_HOSTNAME="${GATEWAY_HOSTNAME/#\*/podinfo.${cluster/#eks-/}}"
+  PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME/#\*/podinfo.global}"
+
+  kubectl apply --kubeconfig "${cluster}.kubeconfig" --server-side -f - <<EOF
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: podinfo
+spec:
+  parentRefs:
+  - name: envoy-gateway
+    namespace: envoy-ingress
+    sectionName: http
+  hostnames:
+  - "${PODINFO_HOSTNAME}"
+  - "${PODINFO_HOSTNAME_GLOBAL}"
+  rules:
+  - backendRefs:
+    - name: podinfo
+      port: 9898
+EOF
+done
+
+GATEWAY_HOSTNAME="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways --namespace envoy-ingress envoy-gateway -ojsonpath='{.spec.listeners[0].hostname}')"
 readonly GATEWAY_HOSTNAME
 readonly PODINFO_HOSTNAME_EU="${GATEWAY_HOSTNAME/#\*/podinfo.eu}"
 readonly PODINFO_HOSTNAME_US="${GATEWAY_HOSTNAME/#\*/podinfo.us}"
 readonly PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME/#\*/podinfo.global}"
 
-kubectl apply --kubeconfig eks-eu.kubeconfig --server-side -f - <<EOF
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: HTTPRoute
-metadata:
-  name: podinfo
-spec:
-  parentRefs:
-  - name: envoy-gateway
-    sectionName: http
-  hostnames:
-  - "${PODINFO_HOSTNAME_EU}"
-  - "${PODINFO_HOSTNAME_GLOBAL}"
-  rules:
-  - backendRefs:
-    - name: podinfo
-      port: 9898
-EOF
-
-helm upgrade --kubeconfig eks-us.kubeconfig --install podinfo oci://ghcr.io/stefanprodan/charts/podinfo --namespace default --wait --wait-for-jobs \
-  --set-string ui.logo=https://upload.wikimedia.org/wikipedia/commons/a/a9/Flag_of_the_United_States_%28DoS_ECA_Color_Standard%29.svg \
-  --set-string ui.message="I'm in the USA!"
-
-kubectl apply --kubeconfig eks-us.kubeconfig --server-side -f - <<EOF
-apiVersion: gateway.networking.k8s.io/v1beta1
-kind: HTTPRoute
-metadata:
-  name: podinfo
-spec:
-  parentRefs:
-  - name: envoy-gateway
-    sectionName: http
-  hostnames:
-  - "${PODINFO_HOSTNAME_US}"
-  - "${PODINFO_HOSTNAME_GLOBAL}"
-  rules:
-  - backendRefs:
-    - name: podinfo
-      port: 9898
-EOF
-
-kubectl --kubeconfig eks-eu.kubeconfig wait --for=condition=programmed gateways.gateway.networking.k8s.io envoy-gateway
-kubectl --kubeconfig eks-us.kubeconfig wait --for=condition=programmed gateways.gateway.networking.k8s.io envoy-gateway
-
-PUBLIC_HOSTNAME_EU="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways envoy-gateway -ojsonpath='{.status.addresses[0].value}')"
+PUBLIC_HOSTNAME_EU="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways --namespace envoy-ingress envoy-gateway -ojsonpath='{.status.addresses[0].value}')"
 readonly PUBLIC_HOSTNAME_EU
 read -ra PUBLIC_IPS_EU < <(dig +short "${PUBLIC_HOSTNAME_EU}")
 readonly PUBLIC_IPS_EU
 
-PUBLIC_HOSTNAME_US="$(kubectl --kubeconfig eks-us.kubeconfig get gateways envoy-gateway -ojsonpath='{.status.addresses[0].value}')"
+PUBLIC_HOSTNAME_US="$(kubectl --kubeconfig eks-us.kubeconfig get gateways --namespace envoy-ingress envoy-gateway -ojsonpath='{.status.addresses[0].value}')"
 readonly PUBLIC_HOSTNAME_US
 read -ra PUBLIC_IPS_US < <(dig +short "${PUBLIC_HOSTNAME_US}")
 readonly PUBLIC_IPS_US
