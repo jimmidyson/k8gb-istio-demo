@@ -20,10 +20,10 @@ if kubectl --kubeconfig eks-eu.kubeconfig get gateways --namespace envoy-ingress
   PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME/#\*/podinfo.global}"
 
   PUBLIC_HOSTNAME_EU="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways --namespace envoy-ingress envoy-gateway -ojsonpath='{.status.addresses[0].value}')"
-  read -ra PUBLIC_IPS_EU < <(dig +short "${PUBLIC_HOSTNAME_EU}")
+  readarray -t PUBLIC_IPS_EU < <(dig +short "${PUBLIC_HOSTNAME_EU}")
 
   PUBLIC_HOSTNAME_US="$(kubectl --kubeconfig eks-us.kubeconfig get gateways --namespace envoy-ingress envoy-gateway -ojsonpath='{.status.addresses[0].value}')"
-  read -ra PUBLIC_IPS_US < <(dig +short "${PUBLIC_HOSTNAME_US}")
+  readarray -t PUBLIC_IPS_US < <(dig +short "${PUBLIC_HOSTNAME_US}")
 
   aws route53 change-resource-record-sets \
     --hosted-zone-id "$(tofu -chdir="tofu" output -raw route53_zone_id)" \
@@ -80,10 +80,10 @@ if kubectl --kubeconfig eks-eu.kubeconfig get gateways --namespace istio-ingress
   PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME/#\*/podinfo.global}"
 
   PUBLIC_HOSTNAME_EU="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways --namespace istio-ingress istio-gateway -ojsonpath='{.status.addresses[0].value}')"
-  read -ra PUBLIC_IPS_EU < <(dig +short "${PUBLIC_HOSTNAME_EU}")
+  readarray -t PUBLIC_IPS_EU < <(dig +short "${PUBLIC_HOSTNAME_EU}")
 
   PUBLIC_HOSTNAME_US="$(kubectl --kubeconfig eks-us.kubeconfig get gateways --namespace istio-ingress istio-gateway -ojsonpath='{.status.addresses[0].value}')"
-  read -ra PUBLIC_IPS_US < <(dig +short "${PUBLIC_HOSTNAME_US}")
+  readarray -t PUBLIC_IPS_US < <(dig +short "${PUBLIC_HOSTNAME_US}")
 
   aws route53 change-resource-record-sets \
     --hosted-zone-id "$(tofu -chdir="tofu" output -raw route53_zone_id)" \

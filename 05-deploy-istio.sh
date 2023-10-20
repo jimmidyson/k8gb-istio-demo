@@ -195,7 +195,7 @@ EOF
   esac
 
   kubectl --kubeconfig "${cluster}.kubeconfig" label namespace default istio-injection=enabled --overwrite
-  read -ra deployment_names < <(kubectl --kubeconfig "${cluster}.kubeconfig" get deployments -oname)
+  readarray -t deployment_names < <(kubectl --kubeconfig "${cluster}.kubeconfig" get deployments -oname)
   kubectl --kubeconfig "${cluster}.kubeconfig" rollout restart "${deployment_names[@]}"
 
   kubectl create namespace istio-ingress --dry-run=client -oyaml |
@@ -266,12 +266,12 @@ readonly PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME/#\*/podinfo.global}"
 
 PUBLIC_HOSTNAME_EU="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways --namespace istio-ingress istio-gateway -ojsonpath='{.status.addresses[0].value}')"
 readonly PUBLIC_HOSTNAME_EU
-read -ra PUBLIC_IPS_EU < <(dig +short "${PUBLIC_HOSTNAME_EU}")
+readarray -t PUBLIC_IPS_EU < <(dig +short "${PUBLIC_HOSTNAME_EU}")
 readonly PUBLIC_IPS_EU
 
 PUBLIC_HOSTNAME_US="$(kubectl --kubeconfig eks-us.kubeconfig get gateways --namespace istio-ingress istio-gateway -ojsonpath='{.status.addresses[0].value}')"
 readonly PUBLIC_HOSTNAME_US
-read -ra PUBLIC_IPS_US < <(dig +short "${PUBLIC_HOSTNAME_US}")
+readarray -t PUBLIC_IPS_US < <(dig +short "${PUBLIC_HOSTNAME_US}")
 readonly PUBLIC_IPS_US
 
 CHANGE_RESOURCE_RECORD_ID="$(aws route53 change-resource-record-sets \
