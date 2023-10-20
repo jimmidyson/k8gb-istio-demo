@@ -142,7 +142,7 @@ for cluster in eks-eu eks-us; do
 
   kubectl --kubeconfig "${cluster}.kubeconfig" delete gateways --all --all-namespaces || true
 
-  eval "$(kubectl --kubeconfig "${cluster}.kubeconfig" get services -A -ojson | gojq -r ".items[] | select(.spec.type == \"LoadBalancer\") | \"kubectl delete --kubeconfig ${cluster}.kubeconfig services --namespace=\"+.metadata.namespace+\" \"+.metadata.name")"
+  eval "$(kubectl --kubeconfig "${cluster}.kubeconfig" get services -A -ojson | gojq -r ".items[] | select(.spec.type == \"LoadBalancer\") | \"kubectl delete --kubeconfig ${cluster}.kubeconfig --ignore-not-found services --namespace=\"+.metadata.namespace+\" \"+.metadata.name")"
 done
 
 tofu -chdir="${SCRIPT_DIR}/tofu" destroy -auto-approve -input=false
