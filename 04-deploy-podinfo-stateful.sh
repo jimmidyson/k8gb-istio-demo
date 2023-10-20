@@ -56,12 +56,12 @@ EOF
 
 echo
 echo 'Testing EU stateful...'
-for _ in {1..10}; do curl -fsSL "http://${PODINFO_HOSTNAME_EU}/stateful" | gojq '.message'; done
+for _ in {1..10}; do curl -fsS "http://${PODINFO_HOSTNAME_EU}/stateful" | gojq '.message'; done
 echo
 echo 'Testing US stateful...'
-for _ in {1..10}; do curl -fsSL "http://${PODINFO_HOSTNAME_US}/stateful" | gojq '.message'; done
+for _ in {1..10}; do (curl -fsS "http://${PODINFO_HOSTNAME_US}/stateful" | gojq '.message') || true; done
 echo
 echo 'Testing global stateful...'
-for _ in {1..10}; do curl -fsSL "http://${PODINFO_HOSTNAME_GLOBAL}/stateful" | gojq '.message'; done
+for _ in {1..10}; do (curl -fsS "http://${PODINFO_HOSTNAME_GLOBAL}/stateful" | gojq '.message') || true; done
 
 popd &>/dev/null

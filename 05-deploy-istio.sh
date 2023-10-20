@@ -321,22 +321,22 @@ aws route53 wait resource-record-sets-changed --id "${CHANGE_RESOURCE_RECORD_ID}
 
 echo
 echo 'Testing EU...'
-for _ in {1..10}; do curl -fsSL "http://${PODINFO_HOSTNAME_EU}" | gojq '.message'; done
+for _ in {1..10}; do curl -fsS "http://${PODINFO_HOSTNAME_EU}" | gojq '.message'; done
 echo
 echo 'Testing US...'
-for _ in {1..10}; do curl -fsSL "http://${PODINFO_HOSTNAME_US}" | gojq '.message'; done
+for _ in {1..10}; do curl -fsS "http://${PODINFO_HOSTNAME_US}" | gojq '.message'; done
 echo
 echo 'Testing global...'
-for _ in {1..10}; do curl -fsSL "http://${PODINFO_HOSTNAME_GLOBAL}" | gojq '.message'; done
+for _ in {1..10}; do curl -fsS "http://${PODINFO_HOSTNAME_GLOBAL}" | gojq '.message'; done
 
 echo
 echo 'Testing EU stateful...'
-for _ in {1..10}; do curl -fsSL "http://${PODINFO_HOSTNAME_EU}/stateful" | gojq '.message'; done
+for _ in {1..10}; do curl -fsS "http://${PODINFO_HOSTNAME_EU}/stateful" | gojq '.message'; done
 echo
 echo 'Testing US stateful...'
-for _ in {1..10}; do curl -fsSL "http://${PODINFO_HOSTNAME_US}/stateful" | gojq '.message'; done
+for _ in {1..10}; do curl -fsS "http://${PODINFO_HOSTNAME_US}/stateful" | gojq '.message'; done
 echo
 echo 'Testing global stateful...'
-for _ in {1..10}; do curl -fsSL "http://${PODINFO_HOSTNAME_GLOBAL}/stateful" | gojq '.message'; done
+for _ in {1..10}; do curl -fsS "http://${PODINFO_HOSTNAME_GLOBAL}/stateful" | gojq '.message'; done
 
 popd &>/dev/null
