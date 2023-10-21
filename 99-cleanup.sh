@@ -134,15 +134,17 @@ EOF
 fi
 
 for cluster in eks-eu eks-us; do
-  if helm status --kubeconfig "${cluster}.kubeconfig" envoy-gateway --namespace envoy-gateway-system &>/dev/null; then
-    helm uninstall --kubeconfig "${cluster}.kubeconfig" envoy-gateway --namespace envoy-gateway-system --wait
-  fi
-
   istioctl uninstall --kubeconfig "${cluster}.kubeconfig" -y --purge || true
 
   kubectl --kubeconfig "${cluster}.kubeconfig" delete gateways --all --all-namespaces || true
 
+  sleep 1m
+
   eval "$(kubectl --kubeconfig "${cluster}.kubeconfig" get services -A -ojson | gojq -r ".items[] | select(.spec.type == \"LoadBalancer\") | \"kubectl delete --kubeconfig ${cluster}.kubeconfig --ignore-not-found services --namespace=\"+.metadata.namespace+\" \"+.metadata.name")"
+
+  if helm status --kubeconfig "${cluster}.kubeconfig" envoy-gateway --namespace envoy-gateway-system &>/dev/null; then
+    helm uninstall --kubeconfig "${cluster}.kubeconfig" envoy-gateway --namespace envoy-gateway-system --wait
+  fi
 done
 
 tofu -chdir="${SCRIPT_DIR}/tofu" destroy -auto-approve -input=false
