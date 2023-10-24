@@ -170,3 +170,8 @@ output "cluster_region_eu" {
   description = "Region for EKS cluster - EU"
   value       = "eu-west-1"
 }
+
+output "cluster_vpc_eu" {
+  description = "VPC for EKS cluster - EU"
+  value       = module.vpc-eu.vpc_id
+}
