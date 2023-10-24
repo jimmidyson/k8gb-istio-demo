@@ -18,9 +18,6 @@ for cluster in eks-eu eks-us; do
   helm upgrade --kubeconfig "${cluster}.kubeconfig" --install envoy-gateway oci://docker.io/envoyproxy/gateway-helm \
     --version v0.5.0 --namespace envoy-gateway-system --create-namespace --wait --wait-for-jobs
 
-  kubectl create namespace envoy-ingress --dry-run=client -oyaml |
-    kubectl --kubeconfig "${cluster}.kubeconfig" apply --server-side -f -
-
   kubectl --kubeconfig "${cluster}.kubeconfig" apply --server-side -f - <<EOF
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: GatewayClass
@@ -33,7 +30,7 @@ apiVersion: gateway.networking.k8s.io/v1beta1
 kind: Gateway
 metadata:
   name: envoy-gateway
-  namespace: envoy-ingress
+  namespace: envoy-gateway-system
 spec:
   gatewayClassName: envoy-gateway
   listeners:
@@ -46,7 +43,7 @@ spec:
         from: All
 EOF
 
-  kubectl --kubeconfig "${cluster}.kubeconfig" wait -n envoy-ingress --for=condition=programmed gateways.gateway.networking.k8s.io envoy-gateway
+  kubectl --kubeconfig "${cluster}.kubeconfig" wait -n envoy-gateway-system --for=condition=programmed gateways.gateway.networking.k8s.io envoy-gateway
 done
 
 popd &>/dev/null

@@ -17,7 +17,7 @@ helm upgrade --kubeconfig eks-eu.kubeconfig --install podinfo-stateful oci://ghc
   --set-string ui.logo=https://upload.wikimedia.org/wikipedia/commons/c/cb/The_Blue_Marble_%28remastered%29.jpg \
   --set-string ui.message="I'm stateful!"
 
-GATEWAY_HOSTNAME="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways --namespace envoy-ingress envoy-gateway -ojsonpath='{.spec.listeners[0].hostname}')"
+GATEWAY_HOSTNAME="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways --namespace envoy-gateway-system envoy-gateway -ojsonpath='{.spec.listeners[0].hostname}')"
 readonly GATEWAY_HOSTNAME
 readonly PODINFO_HOSTNAME_EU="${GATEWAY_HOSTNAME/#\*/podinfo.eu}"
 readonly PODINFO_HOSTNAME_US="${GATEWAY_HOSTNAME/#\*/podinfo.us}"
@@ -31,7 +31,7 @@ metadata:
 spec:
   parentRefs:
   - name: envoy-gateway
-    namespace: envoy-ingress
+    namespace: envoy-gateway-system
     sectionName: http
   hostnames:
   - "${PODINFO_HOSTNAME_EU}"

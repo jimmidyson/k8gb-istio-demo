@@ -28,7 +28,7 @@ for cluster in eks-eu eks-us; do
     --set-string ui.logo="${logos[${cluster}]}" \
     --set-string ui.message="${messages[${cluster}]}"
 
-  GATEWAY_HOSTNAME="$(kubectl --kubeconfig "${cluster}.kubeconfig" get gateways --namespace envoy-ingress envoy-gateway -ojsonpath='{.spec.listeners[0].hostname}')"
+  GATEWAY_HOSTNAME="$(kubectl --kubeconfig "${cluster}.kubeconfig" get gateways --namespace envoy-gateway-system envoy-gateway -ojsonpath='{.spec.listeners[0].hostname}')"
   PODINFO_HOSTNAME="${GATEWAY_HOSTNAME/#\*/podinfo.${cluster/#eks-/}}"
   PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME/#\*/podinfo.global}"
 
@@ -40,7 +40,7 @@ metadata:
 spec:
   parentRefs:
   - name: envoy-gateway
-    namespace: envoy-ingress
+    namespace: envoy-gateway-system
     sectionName: http
   hostnames:
   - "${PODINFO_HOSTNAME}"
@@ -52,18 +52,18 @@ spec:
 EOF
 done
 
-GATEWAY_HOSTNAME="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways --namespace envoy-ingress envoy-gateway -ojsonpath='{.spec.listeners[0].hostname}')"
+GATEWAY_HOSTNAME="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways --namespace envoy-gateway-system envoy-gateway -ojsonpath='{.spec.listeners[0].hostname}')"
 readonly GATEWAY_HOSTNAME
 readonly PODINFO_HOSTNAME_EU="${GATEWAY_HOSTNAME/#\*/podinfo.eu}"
 readonly PODINFO_HOSTNAME_US="${GATEWAY_HOSTNAME/#\*/podinfo.us}"
 readonly PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME/#\*/podinfo.global}"
 
-PUBLIC_HOSTNAME_EU="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways --namespace envoy-ingress envoy-gateway -ojsonpath='{.status.addresses[0].value}')"
+PUBLIC_HOSTNAME_EU="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways --namespace envoy-gateway-system envoy-gateway -ojsonpath='{.status.addresses[0].value}')"
 readonly PUBLIC_HOSTNAME_EU
 readarray -t PUBLIC_IPS_EU < <(dig +short "${PUBLIC_HOSTNAME_EU}")
 readonly PUBLIC_IPS_EU
 
-PUBLIC_HOSTNAME_US="$(kubectl --kubeconfig eks-us.kubeconfig get gateways --namespace envoy-ingress envoy-gateway -ojsonpath='{.status.addresses[0].value}')"
+PUBLIC_HOSTNAME_US="$(kubectl --kubeconfig eks-us.kubeconfig get gateways --namespace envoy-gateway-system envoy-gateway -ojsonpath='{.status.addresses[0].value}')"
 readonly PUBLIC_HOSTNAME_US
 readarray -t PUBLIC_IPS_US < <(dig +short "${PUBLIC_HOSTNAME_US}")
 readonly PUBLIC_IPS_US
