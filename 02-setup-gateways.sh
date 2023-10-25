@@ -14,7 +14,7 @@ if ! aws sts get-caller-identity &>/dev/null; then
 fi
 
 for cluster in eks-eu eks-us; do
-  kubectl --kubeconfig "${cluster}.kubeconfig" apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0-rc1/standard-install.yaml
+  kubectl --kubeconfig "${cluster}.kubeconfig" apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.0.0-rc2/experimental-install.yaml
   helm upgrade --kubeconfig "${cluster}.kubeconfig" --install envoy-gateway oci://docker.io/envoyproxy/gateway-helm \
     --version v0.5.0 --namespace envoy-gateway-system --create-namespace --wait --wait-for-jobs
 
@@ -41,9 +41,27 @@ spec:
     allowedRoutes:
       namespaces:
         from: All
+  infrastructure:
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: external
+      service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+      service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+      service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "2"
+      service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold: "2"
+      service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "5"
+      service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: "2"
 EOF
 
   kubectl --kubeconfig "${cluster}.kubeconfig" wait -n envoy-gateway-system --for=condition=programmed gateways.gateway.networking.k8s.io envoy-gateway
+
+  kubectl --kubeconfig "${cluster}.kubeconfig" annotate services -n envoy-gateway-system --selector gateway.envoyproxy.io/owning-gateway-name=envoy-gateway \
+    service.beta.kubernetes.io/aws-load-balancer-type=external \
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type=ip \
+    service.beta.kubernetes.io/aws-load-balancer-scheme=internet-facing \
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold=2 \
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold=2 \
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval=5 \
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout=2
 done
 
 popd &>/dev/null

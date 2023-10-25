@@ -24,14 +24,16 @@ if [[ -n ${ROUTE53_RESOURCE_RECORDS} ]]; then
 fi
 
 for cluster in eks-eu eks-us; do
-  istioctl uninstall --kubeconfig "${cluster}.kubeconfig" -y --purge || true
+  kubectl --kubeconfig "${cluster}.kubeconfig" delete gslbs.k8gb.absa.oss --all -A
+
+  istioctl uninstall --kubeconfig "${cluster}.kubeconfig" -y --purge
 
   if kubectl --kubeconfig "${cluster}.kubeconfig" get deployment -n envoy-gateway-system envoy-gateway &>/dev/null; then
     kubectl --kubeconfig "${cluster}.kubeconfig" scale deployment -n envoy-gateway-system envoy-gateway --replicas=0
   fi
 
   kubectl --kubeconfig "${cluster}.kubeconfig" patch -n envoy-gateway-system \
-    "$(kubectl --kubeconfig "${cluster}.kubeconfig" get services -n envoy-gateway-system -oname -l gateway.envoyproxy.io/owning-gateway-name=envoy-gateway || true)" \
+    "$(kubectl --kubeconfig "${cluster}.kubeconfig" get services -n envoy-gateway-system -oname -l gateway.envoyproxy.io/owning-gateway-name=envoy-gateway | sed 's|services/||' || true)" \
     -p '[{"op": "add", "path": "/metadata/finalizers", "value": ["service.kubernetes.io/load-balancer-cleanup"]}]' --type=json || true
 
   kubectl --kubeconfig "${cluster}.kubeconfig" delete gateways --all --all-namespaces || true
@@ -41,12 +43,10 @@ for cluster in eks-eu eks-us; do
   if helm status --kubeconfig "${cluster}.kubeconfig" envoy-gateway --namespace envoy-gateway-system &>/dev/null; then
     helm uninstall --kubeconfig "${cluster}.kubeconfig" envoy-gateway --namespace envoy-gateway-system --wait
   fi
-done
 
-# aws ec2 describe-security-groups --region "$(tofu -chdir="tofu" output -raw cluster_region_us)" --filters "Name=vpc-id,Values=$(tofu -chdir="tofu" output -raw cluster_vpc_us)" | \
-#   gojq --raw-output '.SecurityGroups[].GroupId' | xargs aws ec2 delete-security-group --group-id
-# aws ec2 describe-security-groups --region "$(tofu -chdir="tofu" output -raw cluster_region_eu)" --filters "Name=vpc-id,Values=$(tofu -chdir="tofu" output -raw cluster_vpc_eu)" | \
-#   gojq --raw-output '.SecurityGroups[].GroupId' | xargs aws ec2 delete-security-group --group-id
+  aws ec2 describe-security-groups --region "$(tofu -chdir="tofu" output -raw "cluster_region_${cluster/#eks-/}")" --filters "Name=vpc-id,Values=$(tofu -chdir="tofu" output -raw "cluster_vpc_${cluster/#eks-/}")" |
+    gojq --raw-output '.SecurityGroups[] | select(.GroupName != "default").GroupId' | xargs -t -I{} bash -c "aws ec2 delete-security-group --region $(tofu -chdir="tofu" output -raw "cluster_region_${cluster/#eks-/}") --group-id {} || true"
+done
 
 tofu -chdir="${SCRIPT_DIR}/tofu" destroy -auto-approve -input=false
 

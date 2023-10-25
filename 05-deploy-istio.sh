@@ -256,6 +256,15 @@ spec:
     - name: podinfo
       port: 9898
 EOF
+
+  kubectl --kubeconfig "${cluster}.kubeconfig" apply --server-side -f - <<EOF
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: istio
+spec:
+  controller: istio.io/ingress-controller
+EOF
 done
 
 GATEWAY_HOSTNAME="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways --namespace istio-ingress istio-gateway -ojsonpath='{.spec.listeners[0].hostname}')"

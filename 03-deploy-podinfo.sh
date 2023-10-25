@@ -25,8 +25,11 @@ declare -rA logos=(
 for cluster in eks-eu eks-us; do
   helm upgrade --kubeconfig "${cluster}.kubeconfig" --install podinfo oci://ghcr.io/stefanprodan/charts/podinfo \
     --namespace default --wait --wait-for-jobs \
-    --set-string ui.logo="${logos[${cluster}]}" \
-    --set-string ui.message="${messages[${cluster}]}"
+    --values - <<EOF
+ui:
+  logo: "${logos[${cluster}]}"
+  message: "${messages[${cluster}]}"
+EOF
 
   GATEWAY_HOSTNAME="$(kubectl --kubeconfig "${cluster}.kubeconfig" get gateways --namespace envoy-gateway-system envoy-gateway -ojsonpath='{.spec.listeners[0].hostname}')"
   PODINFO_HOSTNAME="${GATEWAY_HOSTNAME/#\*/podinfo.${cluster/#eks-/}}"
@@ -114,6 +117,8 @@ CHANGE_RESOURCE_RECORD_ID="$(aws route53 change-resource-record-sets \
 }
 EOF
   ) | gojq --raw-output '.ChangeInfo.Id')"
+
+exit 1
 
 aws route53 wait resource-record-sets-changed --id "${CHANGE_RESOURCE_RECORD_ID}"
 
