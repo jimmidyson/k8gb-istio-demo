@@ -13,7 +13,7 @@ if ! aws sts get-caller-identity &>/dev/null; then
   exit 1
 fi
 
-ROUTE53_RESOURCE_RECORDS="$(aws route53 list-resource-record-sets --hosted-zone-id Z046654418X1SAWLI8RPB |
+ROUTE53_RESOURCE_RECORDS="$(aws route53 list-resource-record-sets --hosted-zone-id "$(tofu -chdir="tofu" output -raw route53_zone_id)" |
   gojq '.ResourceRecordSets | {"Changes": map(select(.Name | test("\\.kubecon-na-2023\\.")) | {"Action": "DELETE", "ResourceRecordSet": .})} | select(.Changes |length > 0)')"
 
 if [[ -n ${ROUTE53_RESOURCE_RECORDS} ]]; then
@@ -31,10 +31,6 @@ for cluster in eks-eu eks-us; do
   if kubectl --kubeconfig "${cluster}.kubeconfig" get deployment -n envoy-gateway-system envoy-gateway &>/dev/null; then
     kubectl --kubeconfig "${cluster}.kubeconfig" scale deployment -n envoy-gateway-system envoy-gateway --replicas=0
   fi
-
-  kubectl --kubeconfig "${cluster}.kubeconfig" patch -n envoy-gateway-system \
-    "$(kubectl --kubeconfig "${cluster}.kubeconfig" get services -n envoy-gateway-system -oname -l gateway.envoyproxy.io/owning-gateway-name=envoy-gateway | sed 's|services/||' || true)" \
-    -p '[{"op": "add", "path": "/metadata/finalizers", "value": ["service.kubernetes.io/load-balancer-cleanup"]}]' --type=json || true
 
   kubectl --kubeconfig "${cluster}.kubeconfig" delete gateways --all --all-namespaces || true
 

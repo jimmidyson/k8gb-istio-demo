@@ -16,10 +16,15 @@ fi
 readonly cluster_geos="euus"
 
 for cluster in eks-eu eks-us; do
+  kubectl create namespace k8gb-system --dry-run=client -oyaml |
+    kubectl label --dry-run=client -oyaml --local -f - \
+      "elbv2.k8s.aws/pod-readiness-gate-inject=enabled" |
+    kubectl --kubeconfig "${cluster}.kubeconfig" apply --server-side -f -
+
   helm upgrade --kubeconfig "${cluster}.kubeconfig" --install k8gb https://www.k8gb.io/charts/k8gb-v0.11.5.tgz \
-    --namespace k8gb-system --create-namespace --wait --wait-for-jobs --values - <<EOF
+    --namespace k8gb-system --wait --wait-for-jobs --values - <<EOF
 k8gb:
-  dnsZone: "k8gb.$(tofu -chdir="tofu" output -raw "route53_zone_name")"
+  dnsZone: "k8gb.kubecon-na-2023.$(tofu -chdir="tofu" output -raw "route53_zone_name")"
   edgeDNSZone: "$(tofu -chdir="tofu" output -raw "route53_zone_name")"
   edgeDNSServers:
     - "169.254.169.253"
@@ -56,7 +61,7 @@ spec:
   ingress:
     ingressClassName: istio
     rules:
-      - host: "podinfo.k8gb.$(tofu -chdir="tofu" output -raw "route53_zone_name")"
+      - host: "podinfo.k8gb.kubecon-na-2023.$(tofu -chdir="tofu" output -raw "route53_zone_name")"
         http:
           paths:
           - path: /
@@ -69,7 +74,7 @@ spec:
   strategy:
     type: roundRobin
     splitBrainThresholdSeconds: 300
-    dnsTtlSeconds: 30
+    dnsTtlSeconds: 5
 EOF
 done
 

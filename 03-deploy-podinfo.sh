@@ -19,7 +19,7 @@ declare -rA messages=(
 )
 declare -rA logos=(
   ['eks-eu']='https://upload.wikimedia.org/wikipedia/commons/b/b7/Flag_of_Europe.svg'
-  ['eks-us']='https://upload.wikimedia.org/wikipedia/commons/b/b7/Flag_of_Europe.svg'
+  ['eks-us']='https://upload.wikimedia.org/wikipedia/commons/a/a4/Flag_of_the_United_States.svg'
 )
 
 for cluster in eks-eu eks-us; do
@@ -117,8 +117,6 @@ CHANGE_RESOURCE_RECORD_ID="$(aws route53 change-resource-record-sets \
 }
 EOF
   ) | gojq --raw-output '.ChangeInfo.Id')"
-
-exit 1
 
 aws route53 wait resource-record-sets-changed --id "${CHANGE_RESOURCE_RECORD_ID}"
 

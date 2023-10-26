@@ -13,12 +13,13 @@ if ! aws sts get-caller-identity &>/dev/null; then
   exit 1
 fi
 
-kubectl create namespace istio-system --dry-run=client -oyaml |
-  kubectl label --dry-run=client -oyaml --local -f - topology.istio.io/network=network-eu |
-  kubectl --kubeconfig eks-eu.kubeconfig apply --server-side -f -
-kubectl create namespace istio-system --dry-run=client -oyaml |
-  kubectl label --dry-run=client -oyaml --local -f - topology.istio.io/network=network-us |
-  kubectl --kubeconfig eks-us.kubeconfig apply --server-side -f -
+for cluster in eks-eu eks-us; do
+  kubectl create namespace istio-system --dry-run=client -oyaml |
+    kubectl label --dry-run=client -oyaml --local -f - \
+      "topology.istio.io/network=network-${cluster/#eks-/}" \
+      "elbv2.k8s.aws/pod-readiness-gate-inject=enabled" |
+    kubectl --kubeconfig "${cluster}.kubeconfig" apply --server-side -f -
+done
 
 mkdir -p certs
 if [ ! -f certs/root-key.pem ]; then
@@ -114,6 +115,19 @@ spec:
         ISTIO_META_DNS_CAPTURE: "true"
         # Enable automatic address allocation, optional
         ISTIO_META_DNS_AUTO_ALLOCATE: "true"
+  components:
+    ingressGateways:
+      - name: istio-ingressgateway
+        enabled: true
+        k8s:
+          serviceAnnotations:
+            service.beta.kubernetes.io/aws-load-balancer-type: external
+            service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+            service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+            service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "2"
+            service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold: "2"
+            service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "5"
+            service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: "2"
   values:
     global:
       meshID: global-mesh
@@ -156,6 +170,14 @@ spec:
               - name: tls-webhook
                 port: 15017
                 targetPort: 15017
+          serviceAnnotations:
+            service.beta.kubernetes.io/aws-load-balancer-type: external
+            service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+            service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+            service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "2"
+            service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold: "2"
+            service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "5"
+            service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: "2"
   values:
     gateways:
       istio-ingressgateway:
@@ -199,6 +221,8 @@ EOF
   kubectl --kubeconfig "${cluster}.kubeconfig" rollout restart "${deployment_names[@]}"
 
   kubectl create namespace istio-ingress --dry-run=client -oyaml |
+    kubectl label --dry-run=client -oyaml --local -f - \
+      "elbv2.k8s.aws/pod-readiness-gate-inject=enabled" |
     kubectl --kubeconfig "${cluster}.kubeconfig" apply --server-side -f -
 
   kubectl --kubeconfig "${cluster}.kubeconfig" apply --server-side -f - <<EOF
@@ -220,6 +244,16 @@ spec:
 EOF
 
   kubectl --kubeconfig "${cluster}.kubeconfig" wait -n istio-ingress --for=condition=programmed gateways.gateway.networking.k8s.io istio-gateway
+
+  kubectl --kubeconfig "${cluster}.kubeconfig" annotate services -n istio-ingress istio-gateway-istio \
+    --overwrite \
+    service.beta.kubernetes.io/aws-load-balancer-type=external \
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type=ip \
+    service.beta.kubernetes.io/aws-load-balancer-scheme=internet-facing \
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold=2 \
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold=2 \
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval=5 \
+    service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout=2
 
   GATEWAY_HOSTNAME="$(kubectl --kubeconfig "${cluster}.kubeconfig" get gateways --namespace istio-ingress istio-gateway -ojsonpath='{.spec.listeners[0].hostname}')"
   PODINFO_HOSTNAME="${GATEWAY_HOSTNAME/#\*/podinfo.${cluster/#eks-/}}"
@@ -275,11 +309,17 @@ readonly PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME/#\*/podinfo.global}"
 
 PUBLIC_HOSTNAME_EU="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways --namespace istio-ingress istio-gateway -ojsonpath='{.status.addresses[0].value}')"
 readonly PUBLIC_HOSTNAME_EU
+until [ -n "$(dig +short "${PUBLIC_HOSTNAME_EU}")" ]; do
+  true
+done
 readarray -t PUBLIC_IPS_EU < <(dig +short "${PUBLIC_HOSTNAME_EU}")
 readonly PUBLIC_IPS_EU
 
 PUBLIC_HOSTNAME_US="$(kubectl --kubeconfig eks-us.kubeconfig get gateways --namespace istio-ingress istio-gateway -ojsonpath='{.status.addresses[0].value}')"
 readonly PUBLIC_HOSTNAME_US
+until [ -n "$(dig +short "${PUBLIC_HOSTNAME_US}")" ]; do
+  true
+done
 readarray -t PUBLIC_IPS_US < <(dig +short "${PUBLIC_HOSTNAME_US}")
 readonly PUBLIC_IPS_US
 
