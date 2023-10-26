@@ -16,6 +16,16 @@ fi
 readonly cluster_geos="euus"
 
 for cluster in eks-eu eks-us; do
+  helm upgrade --kubeconfig "${cluster}.kubeconfig" --install aws-load-balancer-controller https://aws.github.io/eks-charts/aws-load-balancer-controller-1.6.1.tgz \
+    --namespace kube-system --wait --wait-for-jobs --values - <<EOF
+clusterName: "$(tofu -chdir="tofu" output -raw "cluster_name_${cluster/#eks-/}")"
+region: "$(tofu -chdir="tofu" output -raw "cluster_region_${cluster/#eks-/}")"
+vpcId: "$(tofu -chdir="tofu" output -raw "cluster_vpc_${cluster/#eks-/}")"
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: "$(tofu -chdir="tofu" output -raw "aws_load_balancer_controller_arn_${cluster/#eks-/}")"
+EOF
+
   kubectl create namespace k8gb-system --dry-run=client -oyaml |
     kubectl label --dry-run=client -oyaml --local -f - \
       "elbv2.k8s.aws/pod-readiness-gate-inject=enabled" |

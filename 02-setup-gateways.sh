@@ -49,16 +49,6 @@ spec:
 EOF
 
   kubectl --kubeconfig "${cluster}.kubeconfig" wait -n envoy-gateway-system --for=condition=programmed gateways.gateway.networking.k8s.io envoy-gateway
-
-  kubectl --kubeconfig "${cluster}.kubeconfig" annotate services -n envoy-gateway-system --selector gateway.envoyproxy.io/owning-gateway-name=envoy-gateway \
-    --overwrite \
-    service.beta.kubernetes.io/aws-load-balancer-type=external \
-    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type=ip \
-    service.beta.kubernetes.io/aws-load-balancer-scheme=internet-facing \
-    service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold=2 \
-    service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold=2 \
-    service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval=5 \
-    service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout=2
 done
 
 for cluster in eks-eu eks-us; do

@@ -83,7 +83,7 @@ CHANGE_RESOURCE_RECORD_ID="$(aws route53 change-resource-record-sets \
       "ResourceRecordSet": {
         "Name": "${PODINFO_HOSTNAME_EU}",
         "Type": "CNAME",
-        "TTL": 15,
+        "TTL": 5,
         "ResourceRecords": [
           {
             "Value": "${PUBLIC_HOSTNAME_EU}"
@@ -96,7 +96,7 @@ CHANGE_RESOURCE_RECORD_ID="$(aws route53 change-resource-record-sets \
       "ResourceRecordSet": {
         "Name": "${PODINFO_HOSTNAME_US}",
         "Type": "CNAME",
-        "TTL": 15,
+        "TTL": 5,
         "ResourceRecords": [
           {
             "Value": "${PUBLIC_HOSTNAME_US}"
@@ -109,7 +109,7 @@ CHANGE_RESOURCE_RECORD_ID="$(aws route53 change-resource-record-sets \
       "ResourceRecordSet": {
         "Name": "${PODINFO_HOSTNAME_GLOBAL}",
         "Type": "A",
-        "TTL": 15,
+        "TTL": 5,
         "ResourceRecords": $(gojq --compact-output --null-input $'$ARGS.positional | map({"Value":.})' --args -- "${PUBLIC_IPS_EU[@]}" "${PUBLIC_IPS_US[@]}")
       }
     }

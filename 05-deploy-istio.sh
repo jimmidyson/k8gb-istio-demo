@@ -115,19 +115,6 @@ spec:
         ISTIO_META_DNS_CAPTURE: "true"
         # Enable automatic address allocation, optional
         ISTIO_META_DNS_AUTO_ALLOCATE: "true"
-  components:
-    ingressGateways:
-      - name: istio-ingressgateway
-        enabled: true
-        k8s:
-          serviceAnnotations:
-            service.beta.kubernetes.io/aws-load-balancer-type: external
-            service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
-            service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
-            service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "2"
-            service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold: "2"
-            service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "5"
-            service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: "2"
   values:
     global:
       meshID: global-mesh
@@ -170,14 +157,6 @@ spec:
               - name: tls-webhook
                 port: 15017
                 targetPort: 15017
-          serviceAnnotations:
-            service.beta.kubernetes.io/aws-load-balancer-type: external
-            service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
-            service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
-            service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "2"
-            service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold: "2"
-            service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "5"
-            service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: "2"
   values:
     gateways:
       istio-ingressgateway:
@@ -244,16 +223,6 @@ spec:
 EOF
 
   kubectl --kubeconfig "${cluster}.kubeconfig" wait -n istio-ingress --for=condition=programmed gateways.gateway.networking.k8s.io istio-gateway
-
-  kubectl --kubeconfig "${cluster}.kubeconfig" annotate services -n istio-ingress istio-gateway-istio \
-    --overwrite \
-    service.beta.kubernetes.io/aws-load-balancer-type=external \
-    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type=ip \
-    service.beta.kubernetes.io/aws-load-balancer-scheme=internet-facing \
-    service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold=2 \
-    service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold=2 \
-    service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval=5 \
-    service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout=2
 
   GATEWAY_HOSTNAME="$(kubectl --kubeconfig "${cluster}.kubeconfig" get gateways --namespace istio-ingress istio-gateway -ojsonpath='{.spec.listeners[0].hostname}')"
   PODINFO_HOSTNAME="${GATEWAY_HOSTNAME/#\*/podinfo.${cluster/#eks-/}}"
@@ -335,7 +304,7 @@ CHANGE_RESOURCE_RECORD_ID="$(aws route53 change-resource-record-sets \
       "ResourceRecordSet": {
         "Name": "${PODINFO_HOSTNAME_EU}",
         "Type": "CNAME",
-        "TTL": 15,
+        "TTL": 5,
         "ResourceRecords": [
           {
             "Value": "${PUBLIC_HOSTNAME_EU}"
@@ -348,7 +317,7 @@ CHANGE_RESOURCE_RECORD_ID="$(aws route53 change-resource-record-sets \
       "ResourceRecordSet": {
         "Name": "${PODINFO_HOSTNAME_US}",
         "Type": "CNAME",
-        "TTL": 15,
+        "TTL": 5,
         "ResourceRecords": [
           {
             "Value": "${PUBLIC_HOSTNAME_US}"
@@ -361,7 +330,7 @@ CHANGE_RESOURCE_RECORD_ID="$(aws route53 change-resource-record-sets \
       "ResourceRecordSet": {
         "Name": "${PODINFO_HOSTNAME_GLOBAL}",
         "Type": "A",
-        "TTL": 15,
+        "TTL": 5,
         "ResourceRecords": $(gojq --compact-output --null-input $'$ARGS.positional | map({"Value":.})' --args -- "${PUBLIC_IPS_EU[@]}" "${PUBLIC_IPS_US[@]}")
       }
     }
