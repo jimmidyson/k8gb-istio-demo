@@ -23,7 +23,7 @@ declare -rA logos=(
 )
 
 for cluster in eks-eu eks-us; do
-  helm upgrade --kubeconfig "${cluster}.kubeconfig" --install podinfo oci://ghcr.io/stefanprodan/charts/podinfo \
+  helm upgrade --kubeconfig "${cluster}.kubeconfig" --install podinfo-stateless oci://ghcr.io/stefanprodan/charts/podinfo \
     --namespace default --wait --wait-for-jobs \
     --values - <<EOF
 ui:
@@ -50,7 +50,7 @@ spec:
   - "${PODINFO_HOSTNAME_GLOBAL}"
   rules:
   - backendRefs:
-    - name: podinfo
+    - name: podinfo-stateless
       port: 9898
 EOF
 done

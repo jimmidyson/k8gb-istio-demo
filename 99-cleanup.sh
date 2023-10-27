@@ -39,9 +39,6 @@ for cluster in eks-eu eks-us; do
   if helm status --kubeconfig "${cluster}.kubeconfig" envoy-gateway --namespace envoy-gateway-system &>/dev/null; then
     helm uninstall --kubeconfig "${cluster}.kubeconfig" envoy-gateway --namespace envoy-gateway-system --wait
   fi
-
-  aws ec2 describe-security-groups --region "$(tofu -chdir="tofu" output -raw "cluster_region_${cluster/#eks-/}")" --filters "Name=vpc-id,Values=$(tofu -chdir="tofu" output -raw "cluster_vpc_${cluster/#eks-/}")" |
-    gojq --raw-output '.SecurityGroups[] | select(.GroupName != "default").GroupId' | xargs -t -I{} bash -c "aws ec2 delete-security-group --region $(tofu -chdir="tofu" output -raw "cluster_region_${cluster/#eks-/}") --group-id {} || true"
 done
 
 tofu -chdir="${SCRIPT_DIR}/tofu" destroy -auto-approve -input=false

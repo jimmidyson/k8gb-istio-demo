@@ -51,7 +51,7 @@ spec:
           type: ReplacePrefixMatch
           replacePrefixMatch: /
   - backendRefs:
-    - name: podinfo
+    - name: podinfo-stateless
       port: 9898
 EOF
 

@@ -62,6 +62,47 @@ coredns:
       service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: "2"
 EOF
 
+  helm --kubeconfig "${cluster}.kubeconfig" upgrade podinfo https://github.com/isotoma/charts/releases/download/socat-tunneller-0.2.0/socat-tunneller-0.2.0.tgz \
+    --install --wait --wait-for-jobs \
+    --values - <<EOF
+tunnel:
+  host: podinfo.default.svc.cluster.local
+  port: 9898
+fullnameOverride: podinfo
+EOF
+
+  kubectl --kubeconfig "${cluster}.kubeconfig" apply --server-side -f - <<EOF
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: podinfo.default.svc.cluster.local
+spec:
+  hosts:
+  - podinfo.default.svc.cluster.local
+  - podinfo.k8gb.kubecon-na-2023.$(tofu -chdir="tofu" output -raw "route53_zone_name")
+  http:
+  - match:
+    - uri:
+        prefix: "/stateful/"
+    - uri:
+        exact: "/stateful"
+    rewrite:
+      uri: "/"
+    route:
+    - destination:
+        host: podinfo-stateful.default.svc.cluster.local
+        port:
+          number: 9898
+  - match:
+    - uri:
+        prefix: "/"
+    route:
+    - destination:
+        host: podinfo-stateless.default.svc.cluster.local
+        port:
+          number: 9898
+EOF
+
   kubectl --kubeconfig "${cluster}.kubeconfig" apply --server-side -f - <<EOF
 apiVersion: k8gb.absa.oss/v1beta1
 kind: Gslb
@@ -80,7 +121,7 @@ spec:
               service:
                 name: podinfo
                 port:
-                  name: http
+                  number: 9898
   strategy:
     type: roundRobin
     splitBrainThresholdSeconds: 300
