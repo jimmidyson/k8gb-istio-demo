@@ -31,6 +31,9 @@ EOF
       "elbv2.k8s.aws/pod-readiness-gate-inject=enabled" |
     kubectl --kubeconfig "${cluster}.kubeconfig" apply --server-side -f -
 
+  kubectl create configmap geo-data --from-file=geoip.mmdb -n k8gb-system --dry-run=client -oyaml |
+    kubectl --kubeconfig "${cluster}.kubeconfig" apply --server-side -f -
+
   helm upgrade --kubeconfig "${cluster}.kubeconfig" --install k8gb https://www.k8gb.io/charts/k8gb-v0.11.5.tgz \
     --namespace k8gb-system --wait --wait-for-jobs --values - <<EOF
 k8gb:
@@ -50,6 +53,14 @@ route53:
   irsaRole: "$(tofu -chdir="tofu" output -raw "k8gb_role_arn_${cluster/#eks-/}")"
 
 coredns:
+  extraVolumes:
+  - name: geo-data
+    configMap:
+      name: geo-data
+  extraVolumeMounts:
+  - name: geo-data
+    mountPath: /geoip.mmdb
+    subPath: geoip.mmdb
   serviceType: LoadBalancer
   service:
     annotations:
@@ -61,6 +72,8 @@ coredns:
       service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "5"
       service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: "2"
 EOF
+
+  kubectl --kubeconfig "${cluster}.kubeconfig" -n k8gb-system rollout restart deployment k8gb-coredns
 
   helm --kubeconfig "${cluster}.kubeconfig" upgrade podinfo https://github.com/isotoma/charts/releases/download/socat-tunneller-0.2.0/socat-tunneller-0.2.0.tgz \
     --install --wait --wait-for-jobs \
@@ -123,7 +136,7 @@ spec:
                 port:
                   number: 9898
   strategy:
-    type: roundRobin
+    type: geoip
     splitBrainThresholdSeconds: 300
     dnsTtlSeconds: 5
 EOF
