@@ -115,6 +115,12 @@ spec:
         ISTIO_META_DNS_CAPTURE: "true"
         # Enable automatic address allocation, optional
         ISTIO_META_DNS_AUTO_ALLOCATE: "true"
+    serviceSettings:
+    - settings:
+        clusterLocal: true
+      hosts:
+      - "podinfo.default.svc.cluster.local"
+      - "podinfo-stateless.default.svc.cluster.local"
   values:
     global:
       meshID: global-mesh
