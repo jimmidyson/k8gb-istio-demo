@@ -46,6 +46,7 @@ k8gb:
   coredns:
     extra_plugins: |
       reload 2s
+      log
 
 route53:
   enabled: true
@@ -53,6 +54,10 @@ route53:
   irsaRole: "$(tofu -chdir="tofu" output -raw "k8gb_role_arn_${cluster/#eks-/}")"
 
 coredns:
+  image:
+    repository: ghcr.io/jimmidyson/k8s_crd
+    tag: testing
+    pullPolicy: Always
   replicaCount: 2
   extraVolumes:
   - name: geo-data
