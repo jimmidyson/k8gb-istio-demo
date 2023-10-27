@@ -129,4 +129,8 @@ spec:
 EOF
 done
 
+until [ -n "$(dig +short "podinfo.k8gb.kubecon-na-2023.$(tofu -chdir="tofu" output -raw "route53_zone_name")")" ]; do
+  true
+done
+
 popd &>/dev/null
