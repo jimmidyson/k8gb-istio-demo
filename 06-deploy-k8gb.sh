@@ -53,6 +53,7 @@ route53:
   irsaRole: "$(tofu -chdir="tofu" output -raw "k8gb_role_arn_${cluster/#eks-/}")"
 
 coredns:
+  replicaCount: 2
   extraVolumes:
   - name: geo-data
     configMap:
