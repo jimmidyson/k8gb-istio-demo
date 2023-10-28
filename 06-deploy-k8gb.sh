@@ -13,17 +13,17 @@ if ! aws sts get-caller-identity &>/dev/null; then
   exit 1
 fi
 
-readonly cluster_geos="euus"
-
 for cluster in eks-eu eks-us; do
+  cluster_continent="${cluster/#eks-/}"
+
   helm upgrade --kubeconfig "${cluster}.kubeconfig" --install aws-load-balancer-controller https://aws.github.io/eks-charts/aws-load-balancer-controller-1.6.1.tgz \
     --namespace kube-system --wait --wait-for-jobs --values - <<EOF
-clusterName: "$(tofu -chdir="tofu" output -raw "cluster_name_${cluster/#eks-/}")"
-region: "$(tofu -chdir="tofu" output -raw "cluster_region_${cluster/#eks-/}")"
-vpcId: "$(tofu -chdir="tofu" output -raw "cluster_vpc_${cluster/#eks-/}")"
+clusterName: "$(tofu -chdir="tofu" output -raw "cluster_name_${cluster_continent}")"
+region: "$(tofu -chdir="tofu" output -raw "cluster_region_${cluster_continent}")"
+vpcId: "$(tofu -chdir="tofu" output -raw "cluster_vpc_${cluster_continent}")"
 serviceAccount:
   annotations:
-    eks.amazonaws.com/role-arn: "$(tofu -chdir="tofu" output -raw "aws_load_balancer_controller_arn_${cluster/#eks-/}")"
+    eks.amazonaws.com/role-arn: "$(tofu -chdir="tofu" output -raw "aws_load_balancer_controller_arn_${cluster_continent}")"
 EOF
 
   kubectl create namespace k8gb-system --dry-run=client -oyaml |
@@ -31,18 +31,26 @@ EOF
       "elbv2.k8s.aws/pod-readiness-gate-inject=enabled" |
     kubectl --kubeconfig "${cluster}.kubeconfig" apply --server-side -f -
 
-  kubectl create configmap geo-data --from-file=geoip.mmdb -n k8gb-system --dry-run=client -oyaml |
-    kubectl --kubeconfig "${cluster}.kubeconfig" apply --server-side -f -
+  case "${cluster}" in
+  'eks-eu')
+    cluster_geo=EU
+    cluster_ext_geo=NA
+    ;;
+  'eks-us')
+    cluster_geo=NA
+    cluster_ext_geo=EU
+    ;;
+  esac
 
   helm upgrade --kubeconfig "${cluster}.kubeconfig" --install k8gb https://www.k8gb.io/charts/k8gb-v0.11.5.tgz \
-    --namespace k8gb-system --wait --wait-for-jobs --values - <<EOF
+    --namespace k8gb-system --values - <<EOF
 k8gb:
   dnsZone: "k8gb.kubecon-na-2023.$(tofu -chdir="tofu" output -raw "route53_zone_name")"
   edgeDNSZone: "$(tofu -chdir="tofu" output -raw "route53_zone_name")"
   edgeDNSServers:
     - "169.254.169.253"
-  clusterGeoTag: "$(tofu -chdir="tofu" output -raw "cluster_region_${cluster/#eks-/}")"
-  extGslbClustersGeoTags: "$(tofu -chdir="tofu" output -raw "cluster_region_${cluster_geos/${cluster/#eks-/}/}")"
+  clusterGeoTag: ${cluster_geo}
+  extGslbClustersGeoTags: ${cluster_ext_geo}
   coredns:
     extra_plugins: |
       reload 2s
@@ -51,7 +59,7 @@ k8gb:
 route53:
   enabled: true
   hostedZoneID: "$(tofu -chdir="tofu" output -raw "route53_zone_id")"
-  irsaRole: "$(tofu -chdir="tofu" output -raw "k8gb_role_arn_${cluster/#eks-/}")"
+  irsaRole: "$(tofu -chdir="tofu" output -raw "k8gb_role_arn_${cluster_continent}")"
 
 coredns:
   image:
@@ -61,12 +69,11 @@ coredns:
   replicaCount: 2
   extraVolumes:
   - name: geo-data
-    configMap:
-      name: geo-data
+    emptyDir:
+      sizeLimit: 10Mi
   extraVolumeMounts:
   - name: geo-data
-    mountPath: /geoip.mmdb
-    subPath: geoip.mmdb
+    mountPath: /geo-data
   serviceType: LoadBalancer
   service:
     annotations:
@@ -78,6 +85,12 @@ coredns:
       service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "5"
       service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: "2"
 EOF
+
+  kubectl --kubeconfig "${cluster}.kubeconfig" patch configmap -n k8gb-system k8gb-coredns --type=json \
+    -p '[{"op": "add", "path": "/data/Corefile", "value": "k8gb.kubecon-na-2023.dkp2demo.com:5353 {\n    errors\n    health\n    reload 2s\n    log\n    ready\n    prometheus 0.0.0.0:9153\n    forward . /etc/resolv.conf\n    k8s_crd {\n        filter k8gb.absa.oss/dnstype=local\n        negttl 300\n        loadbalance weight\n        geodatafilepath /geo-data/geoip.mmdb\n        geodatafield continent.code\n    }\n}"}]'
+
+  kubectl --kubeconfig "${cluster}.kubeconfig" patch deployment -n k8gb-system k8gb-coredns --type=json \
+    -p '[{"op": "add", "path": "/spec/template/spec/initContainers", "value": [{ "image": "ghcr.io/jimmidyson/k8gb-geoip:latest", "imagePullPolicy": "Always", "name": "copy-geoip-data", "volumeMounts": [ { "mountPath": "/geo-data", "name": "geo-data" } ] }]}]'
 
   kubectl --kubeconfig "${cluster}.kubeconfig" -n k8gb-system rollout restart deployment k8gb-coredns
 
@@ -142,7 +155,7 @@ spec:
                 port:
                   number: 9898
   strategy:
-    type: geoip
+    type: roundRobin
     splitBrainThresholdSeconds: 300
     dnsTtlSeconds: 5
 EOF
