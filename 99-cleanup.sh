@@ -32,6 +32,10 @@ for cluster in eks-eu eks-us; do
     kubectl --kubeconfig "${cluster}.kubeconfig" scale deployment -n envoy-gateway-system envoy-gateway --replicas=0
   fi
 
+  kubectl --kubeconfig "${cluster}.kubeconfig" patch -n envoy-gateway-system \
+    "$(kubectl --kubeconfig "${cluster}.kubeconfig" get services -n envoy-gateway-system -oname -l gateway.envoyproxy.io/owning-gateway-name=envoy-gateway | sed 's|services/||' || true)" \
+    -p '[{"op": "add", "path": "/metadata/finalizers", "value": ["service.kubernetes.io/load-balancer-cleanup"]}]' --type=json || true
+
   kubectl --kubeconfig "${cluster}.kubeconfig" delete gateways --all --all-namespaces || true
 
   eval "$(kubectl --kubeconfig "${cluster}.kubeconfig" get services -A -ojson | gojq -r ".items[] | select(.spec.type == \"LoadBalancer\") | \"kubectl delete --kubeconfig ${cluster}.kubeconfig --ignore-not-found services --namespace=\"+.metadata.namespace+\" \"+.metadata.name")"
