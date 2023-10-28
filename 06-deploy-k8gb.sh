@@ -47,6 +47,8 @@ EOF
 k8gb:
   dnsZone: "k8gb.kubecon-na-2023.$(tofu -chdir="tofu" output -raw "route53_zone_name")"
   edgeDNSZone: "$(tofu -chdir="tofu" output -raw "route53_zone_name")"
+  dnsZoneNegTTL: 60
+
   edgeDNSServers:
     - "169.254.169.253"
   clusterGeoTag: ${cluster_geo}
@@ -156,7 +158,7 @@ spec:
                   number: 9898
   strategy:
     type: roundRobin
-    splitBrainThresholdSeconds: 300
+    splitBrainThresholdSeconds: 60
     dnsTtlSeconds: 5
 EOF
 done
