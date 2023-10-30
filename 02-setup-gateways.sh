@@ -42,7 +42,7 @@ spec:
   - name: http
     port: 80
     protocol: HTTP
-    hostname: "*.envoy.kubecon-na-2023.$(tofu -chdir="tofu" output -raw route53_zone_name)"
+    hostname: "*.envoy.$(tofu -chdir="tofu" output -raw demo_zone_name)"
     allowedRoutes:
       namespaces:
         from: All

@@ -72,7 +72,7 @@ readarray -t PUBLIC_IPS_US < <(dig +short "${PUBLIC_HOSTNAME_US}")
 readonly PUBLIC_IPS_US
 
 CHANGE_RESOURCE_RECORD_ID="$(aws route53 change-resource-record-sets \
-  --hosted-zone-id "$(tofu -chdir="tofu" output -raw route53_zone_id)" \
+  --hosted-zone-id "$(tofu -chdir="tofu" output -raw demo_zone_id)" \
   --no-cli-pager \
   --change-batch file://<(
     cat <<EOF

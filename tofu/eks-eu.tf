@@ -142,7 +142,7 @@ resource "aws_iam_policy" "external-dns-route53-eu" {
                 "route53:ChangeResourceRecordSets"
             ],
             "Resource": [
-                "arn:aws:route53:::hostedzone/${data.aws_route53_zone.demo_zone.zone_id}"
+                "arn:aws:route53:::hostedzone/${aws_route53_zone.demo.zone_id}"
             ]
         },
         {

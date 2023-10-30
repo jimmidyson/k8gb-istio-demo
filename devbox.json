@@ -9,7 +9,7 @@
     "path:./hack/flakes/istioctl",
     "kubectl@latest",
     "kubernetes-helm@latest",
-    "opentofu@latest",
+    "opentofu@1.6.0-alpha2",
     "pre-commit@latest",
     "shfmt@latest",
     "asciinema@latest",

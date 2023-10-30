@@ -45,8 +45,8 @@ EOF
   helm upgrade --kubeconfig "${cluster}.kubeconfig" --install k8gb https://www.k8gb.io/charts/k8gb-v0.11.5.tgz \
     --namespace k8gb-system --values - <<EOF
 k8gb:
-  dnsZone: "k8gb.kubecon-na-2023.$(tofu -chdir="tofu" output -raw "route53_zone_name")"
-  edgeDNSZone: "$(tofu -chdir="tofu" output -raw "route53_zone_name")"
+  dnsZone: "k8gb.$(tofu -chdir="tofu" output -raw "demo_zone_name")"
+  edgeDNSZone: "$(tofu -chdir="tofu" output -raw "demo_zone_name")"
   dnsZoneNegTTL: 60
 
   edgeDNSServers:
@@ -60,7 +60,7 @@ k8gb:
 
 route53:
   enabled: true
-  hostedZoneID: "$(tofu -chdir="tofu" output -raw "route53_zone_id")"
+  hostedZoneID: "$(tofu -chdir="tofu" output -raw "demo_zone_id")"
   irsaRole: "$(tofu -chdir="tofu" output -raw "k8gb_role_arn_${cluster_continent}")"
 
 coredns:
@@ -89,7 +89,7 @@ coredns:
 EOF
 
   kubectl --kubeconfig "${cluster}.kubeconfig" patch configmap -n k8gb-system k8gb-coredns --type=json \
-    -p '[{"op": "add", "path": "/data/Corefile", "value": "k8gb.kubecon-na-2023.dkp2demo.com:5353 {\n    errors\n    health\n    reload 2s\n    log\n    ready\n    prometheus 0.0.0.0:9153\n    forward . /etc/resolv.conf\n    k8s_crd {\n        filter k8gb.absa.oss/dnstype=local\n        negttl 300\n        loadbalance weight\n        geodatafilepath /geo-data/geoip.mmdb\n        geodatafield continent.code\n    }\n}"}]'
+    -p "[{\"op\": \"add\", \"path\": \"/data/Corefile\", \"value\": \"k8gb.$(tofu -chdir="tofu" output -raw demo_zone_name):5353 {\n    errors\n    health\n    reload 2s\n    log\n    ready\n    prometheus 0.0.0.0:9153\n    forward . /etc/resolv.conf\n    k8s_crd {\n        filter k8gb.absa.oss/dnstype=local\n        negttl 300\n        loadbalance weight\n        geodatafilepath /geo-data/geoip.mmdb\n        geodatafield continent.code\n    }\n}\"}]"
 
   kubectl --kubeconfig "${cluster}.kubeconfig" patch deployment -n k8gb-system k8gb-coredns --type=json \
     -p '[{"op": "add", "path": "/spec/template/spec/initContainers", "value": [{ "image": "ghcr.io/jimmidyson/k8gb-geoip:latest", "imagePullPolicy": "Always", "name": "copy-geoip-data", "volumeMounts": [ { "mountPath": "/geo-data", "name": "geo-data" } ] }]}]'
@@ -113,7 +113,7 @@ metadata:
 spec:
   hosts:
   - podinfo.default.svc.cluster.local
-  - podinfo.k8gb.kubecon-na-2023.$(tofu -chdir="tofu" output -raw "route53_zone_name")
+  - podinfo.k8gb.$(tofu -chdir="tofu" output -raw "demo_zone_name")
   http:
   - match:
     - uri:
@@ -146,7 +146,7 @@ spec:
   ingress:
     ingressClassName: istio
     rules:
-      - host: "podinfo.k8gb.kubecon-na-2023.$(tofu -chdir="tofu" output -raw "route53_zone_name")"
+      - host: "podinfo.k8gb.$(tofu -chdir="tofu" output -raw "demo_zone_name")"
         http:
           paths:
           - path: /
@@ -163,7 +163,7 @@ spec:
 EOF
 done
 
-until [ -n "$(dig +short "podinfo.k8gb.kubecon-na-2023.$(tofu -chdir="tofu" output -raw "route53_zone_name")")" ]; do
+until [ -n "$(dig +short "podinfo.k8gb.$(tofu -chdir="tofu" output -raw "demo_zone_name")")" ]; do
   true
 done
 

@@ -13,12 +13,12 @@ if ! aws sts get-caller-identity &>/dev/null; then
   exit 1
 fi
 
-ROUTE53_RESOURCE_RECORDS="$(aws route53 list-resource-record-sets --hosted-zone-id "$(tofu -chdir="tofu" output -raw route53_zone_id)" |
-  gojq '.ResourceRecordSets | {"Changes": map(select(.Name | test("kubecon-na-2023")) | {"Action": "DELETE", "ResourceRecordSet": .})} | select(.Changes |length > 0)')"
+ROUTE53_RESOURCE_RECORDS="$(aws route53 list-resource-record-sets --hosted-zone-id "$(tofu -chdir="tofu" output -raw demo_zone_id)" |
+  gojq '.ResourceRecordSets | {"Changes": map(select(.Type != "NS" and .Type != "SOA") | {"Action": "DELETE", "ResourceRecordSet": .})} | select(.Changes |length > 0)')"
 
 if [[ -n ${ROUTE53_RESOURCE_RECORDS} ]]; then
   aws route53 change-resource-record-sets \
-    --hosted-zone-id "$(tofu -chdir="tofu" output -raw route53_zone_id)" \
+    --hosted-zone-id "$(tofu -chdir="tofu" output -raw demo_zone_id)" \
     --no-cli-pager \
     --change-batch file://<(echo "${ROUTE53_RESOURCE_RECORDS}")
 fi
