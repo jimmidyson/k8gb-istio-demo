@@ -33,7 +33,7 @@ EOF
 
   GATEWAY_HOSTNAME="$(kubectl --kubeconfig "${cluster}.kubeconfig" get gateways --namespace envoy-gateway-system envoy-gateway -ojsonpath='{.spec.listeners[0].hostname}')"
   PODINFO_HOSTNAME="${GATEWAY_HOSTNAME/#\*/podinfo.${cluster/#eks-/}}"
-  PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME/#\*/podinfo.global}"
+  PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME/#\*/podinfo}"
 
   kubectl apply --kubeconfig "${cluster}.kubeconfig" --server-side -f - <<EOF
 apiVersion: gateway.networking.k8s.io/v1beta1
@@ -59,7 +59,7 @@ GATEWAY_HOSTNAME="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways --namesp
 readonly GATEWAY_HOSTNAME
 readonly PODINFO_HOSTNAME_EU="${GATEWAY_HOSTNAME/#\*/podinfo.eu}"
 readonly PODINFO_HOSTNAME_US="${GATEWAY_HOSTNAME/#\*/podinfo.us}"
-readonly PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME/#\*/podinfo.global}"
+readonly PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME/#\*/podinfo}"
 
 PUBLIC_HOSTNAME_EU="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways --namespace envoy-gateway-system envoy-gateway -ojsonpath='{.status.addresses[0].value}')"
 readonly PUBLIC_HOSTNAME_EU
@@ -119,6 +119,12 @@ EOF
   ) | gojq --raw-output '.ChangeInfo.Id')"
 
 aws route53 wait resource-record-sets-changed --id "${CHANGE_RESOURCE_RECORD_ID}"
+
+for hostname in "${PODINFO_HOSTNAME_EU}" "${PODINFO_HOSTNAME_US}" "${PODINFO_HOSTNAME_GLOBAL}"; do
+  until [ -n "$(dig +short "${hostname}")" ]; do
+    true
+  done
+done
 
 echo
 echo 'Testing EU...'

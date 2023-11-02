@@ -6,3 +6,5 @@
 *.conf
 *.csr
 *.srl
+*.cast
+*.gif

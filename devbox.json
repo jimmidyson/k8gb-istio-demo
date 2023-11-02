@@ -13,6 +13,7 @@
     "pre-commit@latest",
     "shfmt@latest",
     "asciinema@latest",
-    "asciinema-agg@latest"
+    "asciinema-agg@latest",
+    "bat@latest"
   ]
 }

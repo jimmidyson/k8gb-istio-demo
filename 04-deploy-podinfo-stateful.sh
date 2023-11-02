@@ -21,7 +21,7 @@ GATEWAY_HOSTNAME="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways --namesp
 readonly GATEWAY_HOSTNAME
 readonly PODINFO_HOSTNAME_EU="${GATEWAY_HOSTNAME/#\*/podinfo.eu}"
 readonly PODINFO_HOSTNAME_US="${GATEWAY_HOSTNAME/#\*/podinfo.us}"
-readonly PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME/#\*/podinfo.global}"
+readonly PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME/#\*/podinfo}"
 
 kubectl apply --kubeconfig eks-eu.kubeconfig --server-side -f - <<EOF
 apiVersion: gateway.networking.k8s.io/v1beta1

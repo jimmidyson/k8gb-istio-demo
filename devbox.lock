@@ -62,22 +62,22 @@
       }
     },
     "awscli2@latest": {
-      "last_modified": "2023-10-25T20:49:13Z",
-      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#awscli2",
+      "last_modified": "2023-10-26T16:08:14Z",
+      "resolved": "github:NixOS/nixpkgs/808c0d8c53c7ae50f82aca8e7df263225cf235bf#awscli2",
       "source": "devbox-search",
-      "version": "2.13.25",
+      "version": "2.13.28",
       "systems": {
         "aarch64-darwin": {
-          "store_path": "/nix/store/zcvb4gkqwigaq5gbcacd07r897xfp8yf-awscli2-2.13.25"
+          "store_path": "/nix/store/6f9h0glzqx0r35rpvvi7c31zssghij6w-awscli2-2.13.28"
         },
         "aarch64-linux": {
-          "store_path": "/nix/store/lawzsrz07015c0cww1wr5slpwl575391-awscli2-2.13.25"
+          "store_path": "/nix/store/vzwk2x2wla8p9wkncjd99fsmj3lnyipg-awscli2-2.13.28"
         },
         "x86_64-darwin": {
-          "store_path": "/nix/store/7pd84qj5d0dmrpj167b8pqc3rgn5q8rd-awscli2-2.13.25"
+          "store_path": "/nix/store/d22axb4b85jgj3f44xxlv8r98b3d9kmc-awscli2-2.13.28"
         },
         "x86_64-linux": {
-          "store_path": "/nix/store/42lk10kkxwl1blr9dicr2978q2qq1sl4-awscli2-2.13.25"
+          "store_path": "/nix/store/qhigx4mmpm7l7lkn77ll2wlyxq2fadl6-awscli2-2.13.28"
         }
       }
     },
@@ -98,6 +98,26 @@
         },
         "x86_64-linux": {
           "store_path": "/nix/store/lf0wpjrj8yx4gsmw2s3xfl58ixmqk8qa-bash-5.2-p15"
+        }
+      }
+    },
+    "bat@latest": {
+      "last_modified": "2023-10-25T20:49:13Z",
+      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#bat",
+      "source": "devbox-search",
+      "version": "0.24.0",
+      "systems": {
+        "aarch64-darwin": {
+          "store_path": "/nix/store/bl96qn8bhksydwy3hzriwxbrwc4j053w-bat-0.24.0"
+        },
+        "aarch64-linux": {
+          "store_path": "/nix/store/2amf3k4klpjcm2j2xnj0659nls1kj8wl-bat-0.24.0"
+        },
+        "x86_64-darwin": {
+          "store_path": "/nix/store/38w7dqa1spl7dnl5mzlscmxgnpwas84h-bat-0.24.0"
+        },
+        "x86_64-linux": {
+          "store_path": "/nix/store/gfgrs376cgjb67sprbvv7c0lbwaijxi5-bat-0.24.0"
         }
       }
     },

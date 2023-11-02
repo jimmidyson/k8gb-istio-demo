@@ -14,7 +14,7 @@ if ! aws sts get-caller-identity &>/dev/null; then
 fi
 
 ROUTE53_RESOURCE_RECORDS="$(aws route53 list-resource-record-sets --hosted-zone-id "$(tofu -chdir="tofu" output -raw demo_zone_id)" |
-  gojq '.ResourceRecordSets | {"Changes": map(select(.Type != "NS" and .Type != "SOA") | {"Action": "DELETE", "ResourceRecordSet": .})} | select(.Changes |length > 0)')"
+  gojq ".ResourceRecordSets | {\"Changes\": map(select(.Name != \"$(tofu -chdir="tofu" output -raw demo_zone_name).\") | {\"Action\": \"DELETE\", \"ResourceRecordSet\": .})} | select(.Changes |length > 0)")" || true
 
 if [[ -n ${ROUTE53_RESOURCE_RECORDS} ]]; then
   aws route53 change-resource-record-sets \
@@ -24,9 +24,9 @@ if [[ -n ${ROUTE53_RESOURCE_RECORDS} ]]; then
 fi
 
 for cluster in eks-eu eks-us; do
-  kubectl --kubeconfig "${cluster}.kubeconfig" delete gslbs.k8gb.absa.oss --all -A
+  kubectl --kubeconfig "${cluster}.kubeconfig" delete gslbs.k8gb.absa.oss --all -A || true
 
-  istioctl uninstall --kubeconfig "${cluster}.kubeconfig" -y --purge
+  istioctl uninstall --kubeconfig "${cluster}.kubeconfig" -y --purge || true
 
   if kubectl --kubeconfig "${cluster}.kubeconfig" get deployment -n envoy-gateway-system envoy-gateway &>/dev/null; then
     kubectl --kubeconfig "${cluster}.kubeconfig" scale deployment -n envoy-gateway-system envoy-gateway --replicas=0

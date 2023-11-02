@@ -115,12 +115,6 @@ spec:
         ISTIO_META_DNS_CAPTURE: "true"
         # Enable automatic address allocation, optional
         ISTIO_META_DNS_AUTO_ALLOCATE: "true"
-    serviceSettings:
-    - settings:
-        clusterLocal: true
-      hosts:
-      - "podinfo.default.svc.cluster.local"
-      - "podinfo-stateless.default.svc.cluster.local"
   values:
     global:
       meshID: global-mesh
@@ -232,7 +226,7 @@ EOF
 
   GATEWAY_HOSTNAME="$(kubectl --kubeconfig "${cluster}.kubeconfig" get gateways --namespace istio-ingress istio-gateway -ojsonpath='{.spec.listeners[0].hostname}')"
   PODINFO_HOSTNAME="${GATEWAY_HOSTNAME/#\*/podinfo.${cluster/#eks-/}}"
-  PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME/#\*/podinfo.global}"
+  PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME/#\*/podinfo}"
 
   kubectl apply --kubeconfig "${cluster}.kubeconfig" --server-side -f - <<EOF
 apiVersion: gateway.networking.k8s.io/v1beta1
@@ -274,13 +268,65 @@ metadata:
 spec:
   controller: istio.io/ingress-controller
 EOF
+
+  kubectl --kubeconfig "${cluster}.kubeconfig" apply --server-side -f - <<EOF
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: podinfo
+spec:
+  host: podinfo.default.svc.cluster.local
+  trafficPolicy:
+    connectionPool:
+      http:
+        maxRequestsPerConnection: 1
+    loadBalancer:
+      simple: ROUND_ROBIN
+      localityLbSetting:
+        enabled: true
+        failover:
+          - from: $(tofu -chdir="tofu" output -raw "cluster_region_eu")
+            to: $(tofu -chdir="tofu" output -raw "cluster_region_us")
+          - from: $(tofu -chdir="tofu" output -raw "cluster_region_us")
+            to: $(tofu -chdir="tofu" output -raw "cluster_region_eu")
+    outlierDetection:
+      consecutive5xxErrors: 1
+      interval: 1s
+      baseEjectionTime: 1m
+EOF
+
+  kubectl --kubeconfig "${cluster}.kubeconfig" apply --server-side -f - <<EOF
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: podinfo-stateless
+spec:
+  host: podinfo-stateless.default.svc.cluster.local
+  trafficPolicy:
+    connectionPool:
+      http:
+        maxRequestsPerConnection: 1
+    loadBalancer:
+      simple: ROUND_ROBIN
+      localityLbSetting:
+        enabled: true
+        failover:
+          - from: $(tofu -chdir="tofu" output -raw "cluster_region_eu")
+            to: $(tofu -chdir="tofu" output -raw "cluster_region_us")
+          - from: $(tofu -chdir="tofu" output -raw "cluster_region_us")
+            to: $(tofu -chdir="tofu" output -raw "cluster_region_eu")
+    outlierDetection:
+      consecutive5xxErrors: 1
+      interval: 1s
+      baseEjectionTime: 1m
+EOF
 done
 
 GATEWAY_HOSTNAME="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways --namespace istio-ingress istio-gateway -ojsonpath='{.spec.listeners[0].hostname}')"
 readonly GATEWAY_HOSTNAME
 readonly PODINFO_HOSTNAME_EU="${GATEWAY_HOSTNAME/#\*/podinfo.eu}"
 readonly PODINFO_HOSTNAME_US="${GATEWAY_HOSTNAME/#\*/podinfo.us}"
-readonly PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME/#\*/podinfo.global}"
+readonly PODINFO_HOSTNAME_GLOBAL="${GATEWAY_HOSTNAME/#\*/podinfo}"
 
 PUBLIC_HOSTNAME_EU="$(kubectl --kubeconfig eks-eu.kubeconfig get gateways --namespace istio-ingress istio-gateway -ojsonpath='{.status.addresses[0].value}')"
 readonly PUBLIC_HOSTNAME_EU
@@ -346,6 +392,12 @@ EOF
   ) | gojq --raw-output '.ChangeInfo.Id')"
 
 aws route53 wait resource-record-sets-changed --id "${CHANGE_RESOURCE_RECORD_ID}"
+
+for hostname in "${PODINFO_HOSTNAME_EU}" "${PODINFO_HOSTNAME_US}" "${PODINFO_HOSTNAME_GLOBAL}"; do
+  until [ -n "$(dig +short "${hostname}")" ]; do
+    true
+  done
+done
 
 echo
 echo 'Testing EU...'
